@@ -16,16 +16,16 @@ struct Record {
   int karma;
 };
 
-// Реализуйте этот класс
 class Database {
-public:
+ public:
   bool Put(const Record &record) {
+    if (_records.count(record.id) > 0) return false;
     auto [it, success] = _records.insert({record.id, record});
     if (success) {
       auto &record_ref = it->second;
-      _records_by_timestamp.insert({record.timestamp, record_ref.id});
-      _records_by_karma.insert({record.karma, record_ref.id});
-      _records_by_user.insert({record_ref.user, record_ref.id});
+      _records_by_timestamp[record.timestamp].insert(record_ref.id);
+      _records_by_karma[record.karma].insert(record_ref.id);
+      _records_by_user[record.user].insert(record_ref.id);
     }
     return success;
   }
@@ -47,35 +47,22 @@ public:
     const Record &ref_to_record = it->second;
 
     {
-      auto [start, stop] =
-          _records_by_timestamp.equal_range(ref_to_record.timestamp);
-      for (auto &it = start; it != stop;) {
-        if (it->second == id) {
-          it = _records_by_timestamp.erase(it);
-        } else {
-          it++;
-        }
+      auto it = _records_by_timestamp.find(ref_to_record.timestamp);
+      if (it != _records_by_timestamp.end()) {
+        it->second.erase(id);
       }
     }
     {
-      auto [start, stop] = _records_by_karma.equal_range(ref_to_record.karma);
-      for (auto &it = start; it != stop;) {
-        if (it->second == id) {
-          it = _records_by_karma.erase(it);
-        } else {
-          it++;
-        }
+      auto it = _records_by_karma.find(ref_to_record.karma);
+      if (it != _records_by_karma.end()) {
+        it->second.erase(id);
       }
     }
 
     {
-      auto [start, stop] = _records_by_user.equal_range(ref_to_record.user);
-      for (auto &it = start; it != stop;) {
-        if (it->second == id) {
-          it = _records_by_user.erase(it);
-        } else {
-          it++;
-        }
+      auto it = _records_by_user.find(ref_to_record.user);
+      if (it != _records_by_user.end()) {
+        it->second.erase(id);
       }
     }
     _records.erase(it);
@@ -84,25 +71,41 @@ public:
 
   template <typename Callback>
   void RangeByTimestamp(int low, int high, Callback callback) const {
+    if (low > high) return;
     auto start = _records_by_timestamp.lower_bound(low);
     auto end = _records_by_timestamp.upper_bound(high);
     bool stop = false;
     for (auto &it = start; it != end && !stop; it++) {
-      stop = !callback(*GetById(string(it->second)));
+      for (auto id : it->second) {
+        stop = !callback(*GetById(string(id)));
+        if (stop) {
+          break;
+        }
+      }
     }
   }
 
   template <typename Callback>
   void RangeByKarma(int low, int high, Callback callback) const {
+    if (low > high) return;
     // for (auto it = _records_by_karma.begin(); it != _records_by_karma.end();
     //      it++) {
-    //   cout << it->first << " / " << it->second << endl;
+    //   cout << it->first << " / [";
+    //   for (auto id : it->second) {
+    //     cout << id << " ";
+    //   }
+    //   cout << "]" << endl;
     // }
     auto start = _records_by_karma.lower_bound(low);
     auto end = _records_by_karma.upper_bound(high);
     bool stop = false;
-    for (auto &it = start; it != end && !stop; it++) {
-      stop = !callback(*GetById(string(it->second)));
+    for (auto it = start; it != end && !stop; it++) {
+      for (auto id : it->second) {
+        stop = !callback(*GetById(string(id)));
+        if (stop) {
+          break;
+        }
+      }
     }
   }
 
@@ -112,19 +115,22 @@ public:
     //      it++) {
     //   cout << it->first << " / " << it->second << endl;
     // }
-    auto start = _records_by_user.lower_bound(user);
-    auto end = _records_by_user.upper_bound(user);
-    bool stop = false;
-    for (auto &it = start; it != end && !stop; it++) {
-      stop = !callback(*GetById(string(it->second)));
+    auto pos = _records_by_user.find(user);
+    if (pos != _records_by_user.end()) {
+      // auto &recs = _records_by_user.at(user);
+      bool stop = false;
+      for (auto it = pos->second.begin(); it != pos->second.end() && !stop;
+           it++) {
+        stop = !callback(*GetById(string(*it)));
+      }
     }
   }
 
-private:
+ private:
   map<string, Record> _records;
-  multimap<int, string_view> _records_by_timestamp;
-  multimap<int, string_view> _records_by_karma;
-  multimap<string_view, string_view> _records_by_user;
+  map<int, unordered_set<string_view>> _records_by_timestamp;
+  map<int, unordered_set<string_view>> _records_by_karma;
+  map<string_view, unordered_set<string_view>> _records_by_user;
 };
 
 void TestRangeBoundaries() {
@@ -171,6 +177,7 @@ void TestSameUser() {
   }
 
   db.Put({"id22", "Rethink life", "master", 1536107260, 2000});
+  db.Put({"id222", "Rethink life", "ss", 1536107260, 2000});
   db.Put({"id232", "xx life", "master", 1536107260, 2});
   {
     int count = 0;
@@ -180,6 +187,15 @@ void TestSameUser() {
     });
 
     ASSERT_EQUAL(3, count);
+  }
+  {
+    int count = 0;
+    db.AllByUser("master", [&count](const Record &) {
+      ++count;
+      return false;
+    });
+
+    ASSERT_EQUAL(1, count);
   }
 }
 
@@ -195,11 +211,142 @@ void TestReplacement() {
   ASSERT(record != nullptr);
   ASSERT_EQUAL(final_body, record->title);
 }
+void TestDoubleInsert() {
+  Database db;
+  ASSERT(db.Put({"id", "Have a hand", "not-master", 1536107260, 10}));
+  ASSERT(!db.Put({"id", "Have a hand", "not-master", 1536107260, 10}));
+  ASSERT(!db.Put({"id", "Have a hand 2", "not-master 2", 1536107262, 12}));
+  ASSERT(db.Put({"id2", "Have a hand", "not-master", 1536107260, 10}));
+  ASSERT(!db.Put({"id2", "Have a hand", "not-master", 1536107260, 10}));
+  db.Erase("id");
+  ASSERT(db.Put({"id", "Have a hand 2", "not-master 2", 1536107262, 12}));
+  ASSERT(!db.Put({"id2", "Have a hand", "not-master", 1536107260, 10}));
+};
+
+void TestGetByIdAndErase() {
+  Database db;
+  ASSERT(db.Put({"id", "Have a hand", "not-master", 1536107260, 10}));
+  ASSERT(db.GetById("id") != nullptr);
+  ASSERT(db.Erase("id"));
+  ASSERT(!db.Erase("id"));
+  ASSERT(db.GetById("id") == nullptr);
+  ASSERT(db.Put({"id", "Have a hand 2", "not-master 2", 1536107262, 12}));
+  ASSERT(db.GetById("id") != nullptr);
+  ASSERT(!db.Erase("id2"));
+}
+
+int GetUserCount(Database db, string name) {
+  int count = 0;
+  db.AllByUser(name, [&count](const Record &) {
+    ++count;
+    return true;
+  });
+  return count;
+}
+
+int GetKarmaCount(Database db, int from, int to) {
+  int count = 0;
+  db.RangeByKarma(from, to, [&count](const Record &) {
+    ++count;
+    return true;
+  });
+  return count;
+}
+int GetTimeCount(Database db, int from, int to) {
+  int count = 0;
+  db.RangeByTimestamp(from, to, [&count](const Record &) {
+    ++count;
+    return true;
+  });
+
+  return count;
+}
+
+void TestTimeIntervals() {
+  Database db;
+  ASSERT(db.Put({"1", "A", "a", 1, 1}));
+  ASSERT(db.Put({"2", "A", "a", 1, 1}));
+  ASSERT(db.Put({"3", "B", "b", 2, 2}));
+  ASSERT(db.Put({"4", "C", "c", 4, 4}));
+  ASSERT(db.Put({"5", "C", "c", 4, 4}));
+  ASSERT(db.Put({"6", "C", "c", 4, 4}));
+  ASSERT(db.Put({"7", "D", "d", 5, 5}));
+  ASSERT(db.Put({"8", "F", "f", 7, 7}));
+
+  ASSERT_EQUAL(GetUserCount(db, "a"), 2);
+  ASSERT_EQUAL(GetUserCount(db, "b"), 1);
+  ASSERT_EQUAL(GetUserCount(db, "c"), 3);
+  ASSERT_EQUAL(GetUserCount(db, "d"), 1);
+  ASSERT_EQUAL(GetUserCount(db, "e"), 0);
+  ASSERT_EQUAL(GetUserCount(db, "f"), 1);
+
+  ASSERT_EQUAL(GetKarmaCount(db, 1, 1), 2);
+  ASSERT_EQUAL(GetKarmaCount(db, 1, 2), 3);
+  ASSERT_EQUAL(GetKarmaCount(db, 1, 3), 3);
+  ASSERT_EQUAL(GetKarmaCount(db, 1, 4), 6);
+  ASSERT_EQUAL(GetKarmaCount(db, 1, 5), 7);
+  ASSERT_EQUAL(GetKarmaCount(db, 1, 7), 8);
+  ASSERT_EQUAL(GetKarmaCount(db, 1, 8), 8);
+
+  ASSERT_EQUAL(GetKarmaCount(db, 2, 1), 0);
+  ASSERT_EQUAL(GetKarmaCount(db, 2, 2), 1);
+  ASSERT_EQUAL(GetKarmaCount(db, 2, 4), 4);
+  ASSERT_EQUAL(GetKarmaCount(db, 2, 5), 5);
+  ASSERT_EQUAL(GetKarmaCount(db, 2, 6), 5);
+  ASSERT_EQUAL(GetKarmaCount(db, 2, 7), 6);
+  ASSERT_EQUAL(GetKarmaCount(db, 2, 8), 6);
+
+  ASSERT_EQUAL(GetKarmaCount(db, 3, 1), 0);
+  ASSERT_EQUAL(GetKarmaCount(db, 3, 2), 0);
+  ASSERT_EQUAL(GetKarmaCount(db, 3, 4), 3);
+  ASSERT_EQUAL(GetKarmaCount(db, 3, 5), 4);
+  ASSERT_EQUAL(GetKarmaCount(db, 3, 6), 4);
+  ASSERT_EQUAL(GetKarmaCount(db, 3, 7), 5);
+  ASSERT_EQUAL(GetKarmaCount(db, 3, 8), 5);
+
+  ASSERT_EQUAL(GetKarmaCount(db, 7, 8), 1);
+  ASSERT_EQUAL(GetKarmaCount(db, 8, 8), 0);
+  ASSERT_EQUAL(GetKarmaCount(db, 9, 8), 0);
+  ASSERT_EQUAL(GetKarmaCount(db, 9, 9), 0);
+
+  ASSERT_EQUAL(GetTimeCount(db, 1, 1), 2);
+  ASSERT_EQUAL(GetTimeCount(db, 1, 2), 3);
+  ASSERT_EQUAL(GetTimeCount(db, 1, 3), 3);
+  ASSERT_EQUAL(GetTimeCount(db, 1, 4), 6);
+  ASSERT_EQUAL(GetTimeCount(db, 1, 5), 7);
+  ASSERT_EQUAL(GetTimeCount(db, 1, 7), 8);
+  ASSERT_EQUAL(GetTimeCount(db, 1, 8), 8);
+
+  ASSERT_EQUAL(GetTimeCount(db, 2, 1), 0);
+  ASSERT_EQUAL(GetTimeCount(db, 2, 2), 1);
+  ASSERT_EQUAL(GetTimeCount(db, 2, 4), 4);
+  ASSERT_EQUAL(GetTimeCount(db, 2, 5), 5);
+  ASSERT_EQUAL(GetTimeCount(db, 2, 6), 5);
+  ASSERT_EQUAL(GetTimeCount(db, 2, 7), 6);
+  ASSERT_EQUAL(GetTimeCount(db, 2, 8), 6);
+
+  ASSERT_EQUAL(GetTimeCount(db, 3, 1), 0);
+  ASSERT_EQUAL(GetTimeCount(db, 3, 2), 0);
+  ASSERT_EQUAL(GetTimeCount(db, 3, 4), 3);
+  ASSERT_EQUAL(GetTimeCount(db, 3, 5), 4);
+  ASSERT_EQUAL(GetTimeCount(db, 3, 6), 4);
+  ASSERT_EQUAL(GetTimeCount(db, 3, 7), 5);
+  ASSERT_EQUAL(GetTimeCount(db, 3, 8), 5);
+
+  ASSERT_EQUAL(GetTimeCount(db, 7, 8), 1);
+  ASSERT_EQUAL(GetTimeCount(db, 8, 8), 0);
+  ASSERT_EQUAL(GetTimeCount(db, 9, 8), 0);
+  ASSERT_EQUAL(GetTimeCount(db, 9, 9), 0);
+}
 
 int main() {
   TestRunner tr;
   RUN_TEST(tr, TestRangeBoundaries);
   RUN_TEST(tr, TestSameUser);
-  RUN_TEST(tr, TestReplacement);
+  RUN_TEST(tr, TestRangeBoundaries);
+
+  RUN_TEST(tr, TestDoubleInsert);
+  RUN_TEST(tr, TestGetByIdAndErase);
+  RUN_TEST(tr, TestTimeIntervals);
   return 0;
 }
