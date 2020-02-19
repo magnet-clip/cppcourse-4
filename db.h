@@ -27,9 +27,9 @@ class Database {
     auto [it, success] = _records.insert({record.id, record});
     if (success) {
       auto &record_ref = it->second;
-      _records_by_timestamp[record.timestamp].insert(record_ref.id);
-      _records_by_karma[record.karma].insert(record_ref.id);
-      _records_by_user[record.user].insert(record_ref.id);
+      _records_by_timestamp[record.timestamp].insert(&record_ref);
+      _records_by_karma[record.karma].insert(&record_ref);
+      _records_by_user[record.user].insert(&record_ref);
     }
     return success;
   }
@@ -50,25 +50,25 @@ class Database {
       return false;
     }
 
-    const Record &ref_to_record = it->second;
+    Record &ref_to_record = it->second;
 
     {
       auto it = _records_by_timestamp.find(ref_to_record.timestamp);
       if (it != _records_by_timestamp.end()) {
-        it->second.erase(id);
+        it->second.erase(&ref_to_record);
       }
     }
     {
       auto it = _records_by_karma.find(ref_to_record.karma);
       if (it != _records_by_karma.end()) {
-        it->second.erase(id);
+        it->second.erase(&ref_to_record);
       }
     }
 
     {
       auto it = _records_by_user.find(ref_to_record.user);
       if (it != _records_by_user.end()) {
-        it->second.erase(id);
+        it->second.erase(&ref_to_record);
       }
     }
     _records.erase(it);
@@ -81,8 +81,8 @@ class Database {
     auto start = _records_by_timestamp.lower_bound(low);
     auto end = _records_by_timestamp.upper_bound(high);
     for (auto &it = start; it != end; it++) {
-      for (auto id : it->second) {
-        if (!callback(*GetById(string(id)))) {
+      for (auto item : it->second) {
+        if (!callback(*item)) {
           return;
         }
       }
@@ -95,8 +95,8 @@ class Database {
     auto start = _records_by_karma.lower_bound(low);
     auto end = _records_by_karma.upper_bound(high);
     for (auto it = start; it != end; it++) {
-      for (auto id : it->second) {
-        if (!callback(*GetById(string(id)))) return;
+      for (auto item : it->second) {
+        if (!callback(*item)) return;
       }
     }
   }
@@ -106,14 +106,14 @@ class Database {
     auto pos = _records_by_user.find(user);
     if (pos != _records_by_user.end()) {
       for (auto it = pos->second.begin(); it != pos->second.end(); it++) {
-        if (!callback(*GetById(string(*it)))) return;
+        if (!callback(*(*it))) return;
       }
     }
   }
 
  private:
   unordered_map<string, Record> _records;
-  map<int, unordered_set<string_view>> _records_by_timestamp;
-  map<int, unordered_set<string_view>> _records_by_karma;
-  unordered_map<string, unordered_set<string_view>> _records_by_user;
+  map<int, unordered_set<Record *>> _records_by_timestamp;
+  map<int, unordered_set<Record *>> _records_by_karma;
+  unordered_map<string, unordered_set<Record *>> _records_by_user;
 };
