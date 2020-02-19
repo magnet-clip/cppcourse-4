@@ -36,7 +36,6 @@ class Database {
         throw invalid_argument("karma");
       }
       _records_by_karma[record.karma].insert(record_ref.id);
-      // TODO use recordref ???
       if (_records_by_user[record.user].count(record_ref.id) > 0) {
         throw invalid_argument("user");
       }
