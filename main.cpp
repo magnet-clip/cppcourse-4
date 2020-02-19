@@ -16,10 +16,14 @@ struct Record {
   int karma;
 };
 
+bool operator==(const Record &a, const Record &b) {
+  return tie(a.id, a.title, a.user, a.timestamp, a.karma) ==
+         tie(b.id, b.title, b.user, b.timestamp, b.karma);
+}
+
 class Database {
  public:
   bool Put(const Record &record) {
-    if (_records.count(record.id) > 0) return false;
     auto [it, success] = _records.insert({record.id, record});
     if (success) {
       auto &record_ref = it->second;
@@ -44,6 +48,7 @@ class Database {
     if (it == _records.end()) {
       return false;
     }
+
     const Record &ref_to_record = it->second;
 
     {
@@ -77,9 +82,8 @@ class Database {
     bool stop = false;
     for (auto &it = start; it != end && !stop; it++) {
       for (auto id : it->second) {
-        stop = !callback(*GetById(string(id)));
-        if (stop) {
-          break;
+        if (!callback(*GetById(string(id)))) {
+          return;
         }
       }
     }
@@ -88,40 +92,22 @@ class Database {
   template <typename Callback>
   void RangeByKarma(int low, int high, Callback callback) const {
     if (low > high) return;
-    // for (auto it = _records_by_karma.begin(); it != _records_by_karma.end();
-    //      it++) {
-    //   cout << it->first << " / [";
-    //   for (auto id : it->second) {
-    //     cout << id << " ";
-    //   }
-    //   cout << "]" << endl;
-    // }
+
     auto start = _records_by_karma.lower_bound(low);
     auto end = _records_by_karma.upper_bound(high);
-    bool stop = false;
-    for (auto it = start; it != end && !stop; it++) {
+    for (auto it = start; it != end; it++) {
       for (auto id : it->second) {
-        stop = !callback(*GetById(string(id)));
-        if (stop) {
-          break;
-        }
+        if (!callback(*GetById(string(id)))) return;
       }
     }
   }
 
   template <typename Callback>
   void AllByUser(const string &user, Callback callback) const {
-    // for (auto it = _records_by_user.begin(); it != _records_by_user.end();
-    //      it++) {
-    //   cout << it->first << " / " << it->second << endl;
-    // }
     auto pos = _records_by_user.find(user);
     if (pos != _records_by_user.end()) {
-      // auto &recs = _records_by_user.at(user);
-      bool stop = false;
-      for (auto it = pos->second.begin(); it != pos->second.end() && !stop;
-           it++) {
-        stop = !callback(*GetById(string(*it)));
+      for (auto it = pos->second.begin(); it != pos->second.end(); it++) {
+        if (!callback(*GetById(string(*it)))) return;
       }
     }
   }
@@ -132,6 +118,33 @@ class Database {
   map<int, unordered_set<string_view>> _records_by_karma;
   map<string_view, unordered_set<string_view>> _records_by_user;
 };
+
+int GetUserCount(Database db, string name) {
+  int count = 0;
+  db.AllByUser(name, [&count](const Record &) {
+    ++count;
+    return true;
+  });
+  return count;
+}
+
+int GetKarmaCount(Database db, int from, int to) {
+  int count = 0;
+  db.RangeByKarma(from, to, [&count](const Record &) {
+    ++count;
+    return true;
+  });
+  return count;
+}
+int GetTimeCount(Database db, int from, int to) {
+  int count = 0;
+  db.RangeByTimestamp(from, to, [&count](const Record &) {
+    ++count;
+    return true;
+  });
+
+  return count;
+}
 
 void TestRangeBoundaries() {
   const int good_karma = 1000;
@@ -211,6 +224,7 @@ void TestReplacement() {
   ASSERT(record != nullptr);
   ASSERT_EQUAL(final_body, record->title);
 }
+
 void TestDoubleInsert() {
   Database db;
   ASSERT(db.Put({"id", "Have a hand", "not-master", 1536107260, 10}));
@@ -223,6 +237,42 @@ void TestDoubleInsert() {
   ASSERT(!db.Put({"id2", "Have a hand", "not-master", 1536107260, 10}));
 };
 
+void TestDoubleInsertSecondaryKey() {
+  Database db;
+  ASSERT(db.Put({"1", "A", "a", 10, 3}));
+  ASSERT(db.Put({"2", "A", "a", 20, 3}));
+  ASSERT(*(db.GetById("1")) == Record({"1", "A", "a", 10, 3}));
+  ASSERT(*(db.GetById("2")) == Record({"2", "A", "a", 20, 3}));
+
+  ASSERT_EQUAL(GetKarmaCount(db, 3, 3), 2);
+  ASSERT_EQUAL(GetTimeCount(db, 10, 10), 1);
+  ASSERT_EQUAL(GetTimeCount(db, 20, 20), 1);
+  ASSERT_EQUAL(GetTimeCount(db, 10, 20), 2);
+
+  ASSERT(!db.Erase("0"));
+  ASSERT(db.Erase("1"));
+  ASSERT(!db.Erase("1"));
+
+  ASSERT_EQUAL(GetKarmaCount(db, 3, 3), 1);
+  ASSERT_EQUAL(GetTimeCount(db, 10, 10), 0);
+  ASSERT_EQUAL(GetTimeCount(db, 20, 20), 1);
+  ASSERT_EQUAL(GetTimeCount(db, 10, 20), 1);
+
+  ASSERT(!db.Put({"2", "A", "a", 20, 3}));
+
+  ASSERT_EQUAL(GetKarmaCount(db, 3, 3), 1);
+  ASSERT_EQUAL(GetTimeCount(db, 10, 10), 0);
+  ASSERT_EQUAL(GetTimeCount(db, 20, 20), 1);
+  ASSERT_EQUAL(GetTimeCount(db, 10, 20), 1);
+
+  ASSERT(db.Put({"1", "A", "a", 10, 3}));
+
+  ASSERT_EQUAL(GetKarmaCount(db, 3, 3), 2);
+  ASSERT_EQUAL(GetTimeCount(db, 10, 10), 1);
+  ASSERT_EQUAL(GetTimeCount(db, 20, 20), 1);
+  ASSERT_EQUAL(GetTimeCount(db, 10, 20), 2);
+}
+
 void TestGetByIdAndErase() {
   Database db;
   ASSERT(db.Put({"id", "Have a hand", "not-master", 1536107260, 10}));
@@ -233,33 +283,6 @@ void TestGetByIdAndErase() {
   ASSERT(db.Put({"id", "Have a hand 2", "not-master 2", 1536107262, 12}));
   ASSERT(db.GetById("id") != nullptr);
   ASSERT(!db.Erase("id2"));
-}
-
-int GetUserCount(Database db, string name) {
-  int count = 0;
-  db.AllByUser(name, [&count](const Record &) {
-    ++count;
-    return true;
-  });
-  return count;
-}
-
-int GetKarmaCount(Database db, int from, int to) {
-  int count = 0;
-  db.RangeByKarma(from, to, [&count](const Record &) {
-    ++count;
-    return true;
-  });
-  return count;
-}
-int GetTimeCount(Database db, int from, int to) {
-  int count = 0;
-  db.RangeByTimestamp(from, to, [&count](const Record &) {
-    ++count;
-    return true;
-  });
-
-  return count;
 }
 
 void TestTimeIntervals() {
@@ -348,5 +371,6 @@ int main() {
   RUN_TEST(tr, TestDoubleInsert);
   RUN_TEST(tr, TestGetByIdAndErase);
   RUN_TEST(tr, TestTimeIntervals);
+  RUN_TEST(tr, TestDoubleInsertSecondaryKey);
   return 0;
 }
