@@ -10,8 +10,23 @@ struct Address {
   int building;
 
   bool operator==(const Address &other) const {
-    // реализуйте оператор
+    return tie(building, city, street) ==
+           tie(other.building, other.city, other.street);
   }
+};
+
+struct AddressHasher {
+  size_t operator()(const Address &address) const {
+    size_t build_hash = int_hasher(address.building);
+    size_t city_hash = str_hasher(address.city);
+    size_t street_hash = str_hasher(address.street);
+    return street_hash + (city_hash + build_hash * n) * n;
+  }
+
+private:
+  const size_t n = 123;
+  hash<string> str_hasher;
+  hash<int> int_hasher;
 };
 
 struct Person {
@@ -21,16 +36,26 @@ struct Person {
   Address address;
 
   bool operator==(const Person &other) const {
-    // реализуйте оператор
+    return tie(height, name, address, weight) ==
+           tie(other.height, other.name, other.address, other.weight);
   }
 };
 
-struct AddressHasher {
-  size_t operator()(const Address &address) const { return 0; }
-};
-
 struct PersonHasher {
-  size_t operator()(const Person &address) const { return 0; }
+  size_t operator()(const Person &person) const {
+    size_t name_hash = str_hasher(person.name);
+    size_t height_hash = int_hasher(person.height);
+    size_t weight_hash = double_hasher(person.weight);
+    size_t addr_hash = addr_hasher(person.address);
+    return addr_hash + (weight_hash + (height_hash + name_hash * n) * n) * n;
+  }
+
+private:
+  const size_t n = 123;
+  hash<string> str_hasher;
+  hash<int> int_hasher;
+  hash<double> double_hasher;
+  AddressHasher addr_hasher;
 };
 
 // сгенерированы командой:
