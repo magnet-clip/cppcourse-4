@@ -27,18 +27,8 @@ class Database {
     auto [it, success] = _records.insert({record.id, record});
     if (success) {
       auto &record_ref = it->second;
-      if (_records_by_timestamp[record.timestamp].count(record_ref.id) > 0) {
-        throw invalid_argument("timestamp");
-      }
       _records_by_timestamp[record.timestamp].insert(record_ref.id);
-
-      if (_records_by_karma[record.karma].count(record_ref.id) > 0) {
-        throw invalid_argument("karma");
-      }
       _records_by_karma[record.karma].insert(record_ref.id);
-      if (_records_by_user[record.user].count(record_ref.id) > 0) {
-        throw invalid_argument("user");
-      }
       _records_by_user[record.user].insert(record_ref.id);
     }
     return success;
