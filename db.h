@@ -64,7 +64,6 @@ class Database {
         it->second.erase(&ref_to_record);
       }
     }
-
     {
       auto it = _records_by_user.find(ref_to_record.user);
       if (it != _records_by_user.end()) {
