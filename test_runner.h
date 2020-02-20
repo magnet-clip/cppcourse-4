@@ -6,12 +6,11 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
-
 using namespace std;
 
-template <class T>
-ostream &operator<<(ostream &os, const vector<T> &s) {
+template <class T> ostream &operator<<(ostream &os, const vector<T> &s) {
   os << "{";
   bool first = true;
   for (const auto &x : s) {
@@ -38,8 +37,21 @@ ostream &operator<<(ostream &os, const vector<T> &s) {
 //   return os << ">";
 // }
 
-template <class T>
-ostream &operator<<(ostream &os, const set<T> &s) {
+template <class K, class V>
+ostream &operator<<(ostream &os, const unordered_map<K, V> &m) {
+  os << "{";
+  bool first = true;
+  for (const auto &kv : m) {
+    if (!first) {
+      os << ", ";
+    }
+    first = false;
+    os << kv.first << ": " << kv.second;
+  }
+  return os << "}";
+}
+
+template <class T> ostream &operator<<(ostream &os, const set<T> &s) {
   os << "{";
   bool first = true;
   for (const auto &x : s) {
@@ -93,7 +105,7 @@ void AssertEqual(T &&t, U &&u, const string &hint = {}) {
 inline void Assert(bool b, const string &hint) { AssertEqual(b, true, hint); }
 
 class TestRunner {
- public:
+public:
   template <class TestFunc>
   void RunTest(TestFunc func, const string &test_name) {
     try {
@@ -115,7 +127,7 @@ class TestRunner {
     }
   }
 
- private:
+private:
   int fail_count = 0;
 };
 
@@ -126,12 +138,12 @@ class TestRunner {
                               << __LINE__;                                     \
     AssertEqual(x, y, __assert_equal_private_os.str());                        \
   }
-#define ASSERT(x)                                                       \
-  {                                                                     \
-    ostringstream __assert_equal_private_os;                            \
-    __assert_equal_private_os << #x << " is false, " << __FILE__ << ":" \
-                              << __LINE__;                              \
-    Assert(x, __assert_equal_private_os.str());                         \
+#define ASSERT(x)                                                              \
+  {                                                                            \
+    ostringstream __assert_equal_private_os;                                   \
+    __assert_equal_private_os << #x << " is false, " << __FILE__ << ":"        \
+                              << __LINE__;                                     \
+    Assert(x, __assert_equal_private_os.str());                                \
   }
 
 #define RUN_TEST(tr, func) tr.RunTest(func, #func)
