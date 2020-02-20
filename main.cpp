@@ -14,5 +14,6 @@ int main() {
   RUN_TEST(tr, TestGetByIdAndErase);
   RUN_TEST(tr, TestTimeIntervals);
   RUN_TEST(tr, TestDoubleInsertSecondaryKey);
+  RUN_TEST(tr, TestDoubleSearchByName);
   return 0;
 }

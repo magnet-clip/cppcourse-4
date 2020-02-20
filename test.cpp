@@ -121,6 +121,31 @@ void TestDoubleInsert() {
   ASSERT(!db.Put({"id2", "Have a hand", "not-master", 1536107260, 10}));
 };
 
+void TestDoubleSearchByName() {
+  string *a = new string("a");
+  Database db;
+  ASSERT(db.Put({"1", "A", *a, 10, 3}));
+  ASSERT_EQUAL(GetUserCount(db, *a), 1);
+  delete a;
+  ASSERT_EQUAL(GetUserCount(db, "a"), 1);
+
+  ASSERT(db.Erase("1"));
+
+  ASSERT(db.Put({"1", "A", "a", 10, 3}));
+  ASSERT_EQUAL(GetUserCount(db, "a"), 1);
+
+  ASSERT(db.Erase("1"));
+
+  string aa = "a";
+  string *a2 = new string("a");
+
+  ASSERT(db.Put({"1", "A", aa, 10, 3}));
+  ASSERT_EQUAL(GetUserCount(db, aa), 1);
+  ASSERT_EQUAL(GetUserCount(db, *a2), 1);
+  ASSERT_EQUAL(GetUserCount(db, "a"), 1);
+  delete a2;
+}
+
 void TestDoubleInsertSecondaryKey() {
   Database db;
   ASSERT(db.Put({"1", "A", "a", 10, 3}));

@@ -7,3 +7,5 @@ void TestDoubleInsert();
 void TestDoubleInsertSecondaryKey();
 void TestGetByIdAndErase();
 void TestTimeIntervals();
+
+void TestDoubleSearchByName();
