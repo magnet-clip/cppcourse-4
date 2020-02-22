@@ -107,10 +107,12 @@ class HttpResponse {
     _headers.push_back({name, value});
     return *this;
   }
+
   HttpResponse& SetContent(string a_content) {
     _content = a_content;
     return *this;
   }
+
   HttpResponse& SetCode(HttpCode a_code) {
     _code = a_code;
     return *this;
@@ -205,6 +207,9 @@ class CommentServer {
   void Ban(size_t user_id);
   int UpdateLastCommentCount();
   size_t IsUserBanned(size_t user_id) const;
+  void LiftBan(size_t user_id);
+  void ResetLastComment();
+  const vector<string>& GetUserComments(size_t user_id) const;
 
  private:
   vector<vector<string>> comments_;
@@ -229,9 +234,6 @@ class AddUserCommand : public HttpHandler {
  public:
   AddUserCommand(CommentServer* server) : HttpHandler(server) {}
   virtual bool ShouldHandle(const HttpRequestAddress& address) const override {
-    cout << "Comparing {" << address.method << " " << address.path << "} to {"
-         << HttpMethod::POST().GetName() << " "
-         << ServerPaths::AddUser().GetName() << "}" << endl;
     return address.method == HttpMethod::POST().GetName() &&
            address.path == ServerPaths::AddUser().GetName();
   }
@@ -246,12 +248,10 @@ class AddCommentCommand : public HttpHandler {
  public:
   AddCommentCommand(CommentServer* server) : HttpHandler(server) {}
   virtual bool ShouldHandle(const HttpRequestAddress& address) const override {
-    cout << "Comparing {" << address.method << " " << address.path << "} to {"
-         << HttpMethod::POST().GetName() << " "
-         << ServerPaths::AddComment().GetName() << "}" << endl;
     return address.method == HttpMethod::POST().GetName() &&
            address.path == ServerPaths::AddComment().GetName();
   }
+
   virtual HttpResponse operator()(const HttpRequest& req) override {
     auto [user_id, comment] = ParseIdAndContent(req.body);
 
@@ -273,6 +273,67 @@ class AddCommentCommand : public HttpHandler {
   }
 };
 
+class CheckCaptchaCommmand : public HttpHandler {
+ public:
+  CheckCaptchaCommmand(CommentServer* server) : HttpHandler(server) {}
+  virtual bool ShouldHandle(const HttpRequestAddress& address) const override {
+    return address.method == HttpMethod::POST().GetName() &&
+           address.path == ServerPaths::CheckCaptcha().GetName();
+  }
+
+  virtual HttpResponse operator()(const HttpRequest& req) override {
+    auto [user_id, response] = ParseIdAndContent(req.body);
+    if (response == "42") {
+      _server->LiftBan(user_id);
+      auto last_comment = _server->GetLastComment();
+      if (last_comment != nullptr && last_comment->user_id == user_id) {
+        _server->ResetLastComment();
+      }
+      return HttpResponse(HttpCode::Ok);
+    } else {
+      return HttpResponse(HttpCode::Found)
+          .AddHeader(HttpHeaders::Location().GetName(),
+                     ServerPaths::Captcha().GetName());
+      ;
+    }
+  }
+};
+
+class UserCommentsCommand : public HttpHandler {
+ public:
+  UserCommentsCommand(CommentServer* server) : HttpHandler(server) {}
+  virtual bool ShouldHandle(const HttpRequestAddress& address) const override {
+    return address.method == HttpMethod::GET().GetName() &&
+           address.path == ServerPaths::UserComments().GetName();
+  }
+
+  virtual HttpResponse operator()(const HttpRequest& req) override {
+    auto user_id = FromString<size_t>(req.get_params.at("user_id"));
+    string response;
+    for (const string& c : _server->GetUserComments(user_id)) {
+      response += c + '\n';
+    }
+
+    return HttpResponse(HttpCode::Ok).SetContent(response);
+  }
+};
+
+class CaptchaCommand : public HttpHandler {
+ public:
+  CaptchaCommand(CommentServer* server) : HttpHandler(server) {}
+  virtual bool ShouldHandle(const HttpRequestAddress& address) const override {
+    return address.method == HttpMethod::GET().GetName() &&
+           address.path == ServerPaths::Captcha().GetName();
+  }
+
+  virtual HttpResponse operator()(const HttpRequest& req) override {
+    return HttpResponse(HttpCode::Ok)
+        .SetContent(
+            "What's the answer for The Ultimate Question of Life, the "
+            "Universe, and Everything?");
+  }
+};
+
 HttpHandler::HttpHandler(CommentServer* server) : _server(server) {}
 
 HandlerResolver::HandlerResolver(shared_ptr<HttpHandler> default_handler)
@@ -282,6 +343,7 @@ HandlerResolver& HandlerResolver::AddHandler(shared_ptr<HttpHandler> handler) {
   _handlers.push_back(handler);
   return *this;
 }
+
 shared_ptr<HttpHandler> HandlerResolver::Get(
     const HttpRequestAddress& address) {
   for (auto it = _handlers.begin(); it != _handlers.end(); it++) {
@@ -300,26 +362,43 @@ HttpResponse CommentServer::ServeRequest(const HttpRequest& req) {
 CommentServer::CommentServer()
     : resolver(HandlerResolver(make_shared<NotFound>(NotFound()))) {
   resolver.AddHandler(make_shared<AddUserCommand>(AddUserCommand(this)))
-      .AddHandler(make_shared<AddCommentCommand>(AddCommentCommand(this)));
+      .AddHandler(make_shared<AddCommentCommand>(AddCommentCommand(this)))
+      .AddHandler(make_shared<CheckCaptchaCommmand>(CheckCaptchaCommmand(this)))
+      .AddHandler(make_shared<UserCommentsCommand>(UserCommentsCommand(this)))
+      .AddHandler(make_shared<CaptchaCommand>(CaptchaCommand(this)));
 }
 
 void CommentServer::AddEmptyComment() { comments_.emplace_back(); }
+
 void CommentServer::AddComment(size_t user_id, const string& comment) {
   comments_[user_id].push_back(move(comment));
 }
+
 size_t CommentServer::GetCommentsCount() const { return comments_.size(); }
+
 const LastCommentInfo* CommentServer::GetLastComment() const {
   return last_comment.has_value() ? &last_comment.value() : nullptr;
 }
+
 void CommentServer::SetLastComment(LastCommentInfo&& info) {
   last_comment = move(info);
 }
+
 void CommentServer::Ban(size_t user_id) { banned_users.insert(user_id); }
+
 int CommentServer::UpdateLastCommentCount() {
   return ++last_comment->consecutive_count;
 }
 size_t CommentServer::IsUserBanned(size_t user_id) const {
   return banned_users.count(user_id);
+}
+
+void CommentServer::LiftBan(size_t user_id) { banned_users.erase(user_id); }
+
+void CommentServer::ResetLastComment() { last_comment.reset(); }
+
+const vector<string>& CommentServer::GetUserComments(size_t user_id) const {
+  return comments_[user_id];
 }
 
 struct HttpHeader {
