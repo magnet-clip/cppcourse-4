@@ -1,4 +1,7 @@
+#include "enums.h"
+#include "http_response.h"
 #include "test_runner.h"
+#include "utils.h"
 
 #include <iostream>
 #include <list>
@@ -12,136 +15,6 @@
 #include <vector>
 
 using namespace std;
-
-enum class HttpCode {
-  Ok = 200,
-  NotFound = 404,
-  Found = 302,
-};
-
-string GetComment(HttpCode code) {
-  switch (code) {
-    case HttpCode::Ok:
-      return "OK";
-    case HttpCode::NotFound:
-      return "Not found";
-    case HttpCode::Found:
-      return "Found";
-  }
-}
-
-#define STATIC(T, Name)   \
-  static T& Name() {      \
-    static T Name(#Name); \
-    return Name;          \
-  }
-
-#define STATIC_VAL(T, Name, Value) \
-  static T& Name() {               \
-    static T Name(Value);          \
-    return Name;                   \
-  }
-
-struct HttpMethod {
- private:
-  HttpMethod(const string name) : _name(name) {}
-
- public:
-  STATIC(HttpMethod, GET);
-  STATIC(HttpMethod, POST);
-
-  bool operator==(const string& name) const { return name == _name; }
-  friend bool operator==(const string& name, const HttpMethod& method) {
-    return name == method._name;
-  }
-  const string& GetName() const { return _name; }
-
- private:
-  const string _name;
-};
-
-struct ServerPaths {
- private:
-  ServerPaths(const string name) : _name(name) {}
-
- public:
-  STATIC_VAL(ServerPaths, Captcha, "/captcha");
-  STATIC_VAL(ServerPaths, CheckCaptcha, "/checkcaptcha");
-  STATIC_VAL(ServerPaths, AddUser, "/add_user");
-  STATIC_VAL(ServerPaths, AddComment, "/add_comment");
-  STATIC_VAL(ServerPaths, UserComments, "/user_comments");
-
-  bool operator==(const string& name) const { return name == _name; }
-  friend bool operator==(const string& name, const ServerPaths& method) {
-    return name == method._name;
-  }
-
-  const string GetName() const { return _name; }
-
- private:
-  const string _name;
-};
-struct HttpHeaders {
- private:
-  HttpHeaders(const string name) : _name(name) {}
-
- public:
-  STATIC(HttpHeaders, Location);
-  STATIC_VAL(HttpHeaders, ContentLength, "Content-Length");
-
-  bool operator==(const string& name) const { return name == _name; }
-  friend bool operator==(const string& name, const HttpHeaders& method) {
-    return name == method._name;
-  }
-
-  const string GetName() const { return _name; }
-
- private:
-  const string _name;
-};
-class HttpResponse {
- public:
-  explicit HttpResponse(HttpCode code) : _code(code) {}
-
-  HttpResponse& AddHeader(string name, string value) {
-    _headers.push_back({name, value});
-    return *this;
-  }
-
-  HttpResponse& SetContent(string a_content) {
-    _content = a_content;
-    return *this;
-  }
-
-  HttpResponse& SetCode(HttpCode a_code) {
-    _code = a_code;
-    return *this;
-  }
-
-  friend ostream& operator<<(ostream& output, const HttpResponse& resp) {
-    output << "HTTP/1.1 " << static_cast<int>(resp._code) << " "
-           << GetComment(resp._code) << endl;
-
-    for (const auto& [name, value] : resp._headers) {
-      output << name << ": " << value << endl;
-    }
-
-    if (resp._content.size() != 0) {
-      output << HttpHeaders::ContentLength().GetName() << ": "
-             << resp._content.size() << endl;
-      output << endl;
-      output << resp._content;
-    } else {
-      output << endl;
-    }
-    return output;
-  }
-
- private:
-  HttpCode _code;
-  string _content;
-  vector<pair<string, string>> _headers;
-};
 
 struct HttpRequest {
   string method, path, body;
