@@ -8,8 +8,111 @@
 
 using namespace std;
 
-// Определите классы Unit, Building, Tower и Fence так, чтобы они наследовались
-// от GameObject и реализовывали его интерфейс.
+#include "game_object.h"
+#include "geo2d.h"
+
+template <class T>
+struct Collider : public GameObject {
+  bool Collide(const GameObject &that) const override final {
+    return that.CollideWith(static_cast<const T &>(*this));
+  }
+};
+
+#define COLLIDE_WITH_DEF(T) \
+  virtual bool CollideWith(const T &that) const override
+
+#define COLLIDE_WITH_IMPL(Me, T)                                \
+  bool Me::CollideWith(const T &that) const {                   \
+    return geo2d::Collide(this->_geometry, that.GetGeometry()); \
+  }
+
+class Unit final : public Collider<Unit> {
+ public:
+  explicit Unit(geo2d::Point geometry) : _geometry(geometry) {}
+
+  COLLIDE_WITH_DEF(Unit);
+  COLLIDE_WITH_DEF(Building);
+  COLLIDE_WITH_DEF(Tower);
+  COLLIDE_WITH_DEF(Fence);
+
+  const geo2d::Point &GetGeometry() const { return _geometry; }
+
+ private:
+  geo2d::Point _geometry;
+};
+
+class Building final : public Collider<Building> {
+ public:
+  explicit Building(geo2d::Rectangle geometry) : _geometry(geometry) {}
+
+  COLLIDE_WITH_DEF(Unit);
+  COLLIDE_WITH_DEF(Building);
+  COLLIDE_WITH_DEF(Tower);
+  COLLIDE_WITH_DEF(Fence);
+
+  const geo2d::Rectangle &GetGeometry() const { return _geometry; }
+
+ private:
+  geo2d::Rectangle _geometry;
+};
+
+class Tower final : public Collider<Tower> {
+ public:
+  explicit Tower(geo2d::Circle geometry) : _geometry(geometry) {}
+
+  COLLIDE_WITH_DEF(Unit);
+  COLLIDE_WITH_DEF(Building);
+  COLLIDE_WITH_DEF(Tower);
+  COLLIDE_WITH_DEF(Fence);
+
+  const geo2d::Circle &GetGeometry() const { return _geometry; }
+
+ private:
+  geo2d::Circle _geometry;
+};
+
+class Fence final : public Collider<Fence> {
+ public:
+  explicit Fence(geo2d::Segment geometry) : _geometry(geometry) {}
+
+  COLLIDE_WITH_DEF(Unit);
+  COLLIDE_WITH_DEF(Building);
+  COLLIDE_WITH_DEF(Tower);
+  COLLIDE_WITH_DEF(Fence);
+
+  const geo2d::Segment &GetGeometry() const { return _geometry; }
+
+ private:
+  geo2d::Segment _geometry;
+};
+
+bool Collide(const GameObject &first, const GameObject &second) {
+  return first.Collide(second);
+}
+
+//=================== Unit
+COLLIDE_WITH_IMPL(Unit, Unit);
+COLLIDE_WITH_IMPL(Unit, Building);
+COLLIDE_WITH_IMPL(Unit, Tower);
+COLLIDE_WITH_IMPL(Unit, Fence);
+
+//=================== Building
+COLLIDE_WITH_IMPL(Building, Unit);
+COLLIDE_WITH_IMPL(Building, Building);
+COLLIDE_WITH_IMPL(Building, Tower);
+COLLIDE_WITH_IMPL(Building, Fence);
+
+//=================== Tower
+COLLIDE_WITH_IMPL(Tower, Unit);
+COLLIDE_WITH_IMPL(Tower, Building);
+COLLIDE_WITH_IMPL(Tower, Tower);
+COLLIDE_WITH_IMPL(Tower, Fence);
+
+//=================== Fence
+COLLIDE_WITH_IMPL(Fence, Unit);
+COLLIDE_WITH_IMPL(Fence, Building);
+COLLIDE_WITH_IMPL(Fence, Tower);
+COLLIDE_WITH_IMPL(Fence, Fence);
 
 void TestAddingNewObjectOnMap() {
   // Юнит-тест моделирует ситуацию, когда на игровой карте уже есть какие-то
