@@ -130,7 +130,9 @@ class HttpResponse {
       output << HttpHeaders::ContentLength().GetName() << ": "
              << resp._content.size() << endl;
       output << endl;
-      output << resp._content << endl;
+      output << resp._content;
+    } else {
+      output << endl;
     }
     return output;
   }
