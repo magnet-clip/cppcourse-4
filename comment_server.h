@@ -1,15 +1,28 @@
 #pragma once
 
+#include <list>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
-#include "handler_resolver.h"
+#include "http_handler.h"
 #include "http_response.h"
 #include "utils.h"
 
-class HandlerResolver;
+class HttpHandler;
+
+class HandlerResolver {
+ public:
+  HandlerResolver(std::shared_ptr<HttpHandler> default_handler);
+  HandlerResolver& AddHandler(std::shared_ptr<HttpHandler> handler);
+  std::shared_ptr<HttpHandler> Get(const HttpRequestAddress& address);
+
+ private:
+  std::shared_ptr<HttpHandler> _default;
+  std::list<std::shared_ptr<HttpHandler>> _handlers;
+};
 
 class CommentServer {
  public:

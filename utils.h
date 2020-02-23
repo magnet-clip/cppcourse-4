@@ -30,14 +30,9 @@ struct HttpHeader {
   std::string name, value;
 };
 
-std::ostream& operator<<(std::ostream& output, const HttpHeader& h) {
-  return output << h.name << ": " << h.value;
-}
+std::ostream& operator<<(std::ostream& output, const HttpHeader& h);
 
-bool operator==(const HttpHeader& lhs, const HttpHeader& rhs) {
-  return lhs.name == rhs.name && lhs.value == rhs.value;
-}
-
+bool operator==(const HttpHeader& lhs, const HttpHeader& rhs);
 struct ParsedResponse {
   int code;
   std::vector<HttpHeader> headers;

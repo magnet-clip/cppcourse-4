@@ -53,3 +53,11 @@ istream& operator>>(istream& input, ParsedResponse& r) {
   input.read(r.content.data(), r.content.size());
   return input;
 }
+
+ostream& operator<<(ostream& output, const HttpHeader& h) {
+  return output << h.name << ": " << h.value;
+}
+
+bool operator==(const HttpHeader& lhs, const HttpHeader& rhs) {
+  return lhs.name == rhs.name && lhs.value == rhs.value;
+}
