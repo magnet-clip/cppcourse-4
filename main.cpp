@@ -39,8 +39,10 @@ class ConcurrentMap {
 
   WriteAccess operator[](const K& key) {
     // TODO: not quite sure that's the best possible approach, I mean divide
-    // hash
+    // by hash
+    // cout << "Key is " << key << endl;
     size_t index = hasher(key) % _bucket_count;
+    cout << "Index is " << index << endl;
     auto& map = _maps[index];
     return WriteAccess{map[key], lock_guard(*_locks[index])};
   }
@@ -256,10 +258,10 @@ void TestHas() {
 int main() {
   TestRunner tr;
   RUN_TEST(tr, TestConcurrentUpdate);
-  RUN_TEST(tr, TestReadAndWrite);
-  RUN_TEST(tr, TestSpeedup);
-  RUN_TEST(tr, TestConstAccess);
-  RUN_TEST(tr, TestStringKeys);
-  RUN_TEST(tr, TestUserType);
-  RUN_TEST(tr, TestHas);
+  // RUN_TEST(tr, TestReadAndWrite);
+  // RUN_TEST(tr, TestSpeedup);
+  // RUN_TEST(tr, TestConstAccess);
+  // RUN_TEST(tr, TestStringKeys);
+  // RUN_TEST(tr, TestUserType);
+  // RUN_TEST(tr, TestHas);
 }
