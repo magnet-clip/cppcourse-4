@@ -1,44 +1,80 @@
-#include "test_runner.h"
 #include "profile.h"
+#include "test_runner.h"
 
+#include <algorithm>
 #include <future>
 #include <mutex>
-#include <unordered_map>
-#include <vector>
-#include <utility>
-#include <algorithm>
 #include <random>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 using namespace std;
 
 template <typename K, typename V, typename Hash = std::hash<K>>
 class ConcurrentMap {
-public:
+ public:
   using MapType = unordered_map<K, V, Hash>;
 
   struct WriteAccess {
     V& ref_to_value;
+    lock_guard<mutex> guard;
   };
 
   struct ReadAccess {
     const V& ref_to_value;
   };
 
-  explicit ConcurrentMap(size_t bucket_count);
+  explicit ConcurrentMap(size_t bucket_count)
+      : _bucket_count(bucket_count), _maps(bucket_count), _locks(bucket_count) {
+    for (size_t i = 0; i < _bucket_count; i++) {
+      _locks[i] = new mutex;
+    }
+  }
 
-  WriteAccess operator[](const K& key);
-  ReadAccess At(const K& key) const;
+  ~ConcurrentMap() {
+    for (size_t i = 0; i < _bucket_count; i++) {
+      delete _locks[i];
+    }
+  }
 
-  bool Has(const K& key) const;
+  WriteAccess operator[](const K& key) {
+    // TODO: not quite sure that's the best possible approach, I mean divide
+    // hash
+    size_t index = hasher(key) % _bucket_count;
+    auto& map = _maps[index];
+    return WriteAccess{map[key], lock_guard(*_locks[index])};
+  }
 
-  MapType BuildOrdinaryMap() const;
+  const ReadAccess At(const K& key) const {
+    size_t index = hasher(key) % _bucket_count;
+    auto& map = _maps[index];
+    return ReadAccess{map[key]};
+  }
 
-private:
+  bool Has(const K& key) const {
+    size_t index = hasher(key) % _bucket_count;
+    auto& map = _maps[index];
+    return map.count(key);
+  }
+
+  MapType BuildOrdinaryMap() const {
+    MapType res;
+    for (size_t i = 0; i < _bucket_count; i++) {
+      lock_guard guard(*_locks[i]);
+      res.insert(_maps[i].begin(), _maps[i].end());
+    }
+    return res;
+  }
+
+ private:
+  const size_t _bucket_count;
+  mutable vector<MapType> _maps;  // not const as gets mutated
+  vector<mutex*> _locks;          // not const as gets filled in in constructor
   Hash hasher;
 };
 
-void RunConcurrentUpdates(
-    ConcurrentMap<int, int>& cm, size_t thread_count, int key_count
-) {
+void RunConcurrentUpdates(ConcurrentMap<int, int>& cm, size_t thread_count,
+                          int key_count) {
   auto kernel = [&cm, key_count](int seed) {
     vector<int> updates(key_count);
     iota(begin(updates), end(updates), -key_count / 2);
@@ -120,13 +156,12 @@ void TestSpeedup() {
 
 void TestConstAccess() {
   const unordered_map<int, string> expected = {
-    {1, "one"},
-    {2, "two"},
-    {3, "three"},
-    {31, "thirty one"},
-    {127, "one hundred and twenty seven"},
-    {1598, "fifteen hundred and ninety eight"}
-  };
+      {1, "one"},
+      {2, "two"},
+      {3, "three"},
+      {31, "thirty one"},
+      {127, "one hundred and twenty seven"},
+      {1598, "fifteen hundred and ninety eight"}};
 
   const ConcurrentMap<int, string> cm = [&expected] {
     ConcurrentMap<int, string> result(3);
@@ -153,10 +188,10 @@ void TestConstAccess() {
 
 void TestStringKeys() {
   const unordered_map<string, string> expected = {
-    {"one", "ONE"},
-    {"two", "TWO"},
-    {"three", "THREE"},
-    {"thirty one", "THIRTY ONE"},
+      {"one", "ONE"},
+      {"two", "TWO"},
+      {"three", "THREE"},
+      {"thirty one", "THIRTY ONE"},
   };
 
   const ConcurrentMap<string, string> cm = [&expected] {

@@ -6,6 +6,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using namespace std;
@@ -65,7 +66,19 @@ ostream &operator<<(ostream &os, const map<K, V> &m) {
   }
   return os << "}";
 }
-
+template <class K, class V>
+ostream &operator<<(ostream &os, const unordered_map<K, V> &m) {
+  os << "{";
+  bool first = true;
+  for (const auto &kv : m) {
+    if (!first) {
+      os << ", ";
+    }
+    first = false;
+    os << kv.first << ": " << kv.second;
+  }
+  return os << "}";
+}
 template <class T, class U>
 void AssertEqual(const T &t, const U &u, const string &hint = {}) {
   if (!(t == u)) {
