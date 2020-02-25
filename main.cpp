@@ -2,6 +2,7 @@
 #include "test_runner.h"
 
 #include <algorithm>
+#include <functional>
 #include <iostream>
 #include <vector>
 
@@ -33,18 +34,30 @@ template <typename T> class Writer {
   using It = typename vector<T>::iterator;
 
 public:
-  Writer(It it) : _it(it) {}
+  Writer(It it, function<void()> hook) : _it(it), _hook(hook) {}
 
   T &operator=(T value) {
-    *_it = value;
+    if (*_it != value) {
+      *_it = value;
+      written = true;
+    }
     return *_it;
   }
 
-  bool operator==(T value) { return *_it == value; }
+  ~Writer() {
+    if (*_it == 0 || !written) {
+      _hook();
+    }
+  }
+
+  bool operator==(T value) const { return *_it == value; }
+  bool operator!=(T value) const { return *_it != value; }
   const T &Get() const { return *_it; }
 
 private:
+  bool written;
   It _it;
+  function<void()> _hook;
 };
 
 template <typename T> ostream &operator<<(ostream &s, Writer<T> w) {
@@ -105,11 +118,12 @@ public:
   }
 
   Writer<T> operator[](size_t degree) {
+    size_t last_degree = coeffs_.size();
     if (degree >= coeffs_.size()) {
       coeffs_.resize(degree + 1);
     }
     typename vector<T>::iterator x = next(coeffs_.begin(), degree);
-    return Writer<T>(x);
+    return Writer<T>(x, [this, last_degree]() { coeffs_.resize(last_degree); });
   }
 
   T operator()(const T &x) const {
@@ -281,6 +295,15 @@ void TestNonconstAccess() {
   }
 }
 
+void TestNoChange() {
+  Polynomial<int> p;
+  p[2] = 1;
+  ASSERT_EQUAL(p.Degree(), 2);
+  auto x = p[5];
+  ASSERT_EQUAL(x, 0);
+  ASSERT_EQUAL(p.Degree(), 2);
+}
+
 int main() {
   TestRunner tr;
   RUN_TEST(tr, TestCreation);
@@ -290,5 +313,6 @@ int main() {
   RUN_TEST(tr, TestEvaluation);
   RUN_TEST(tr, TestConstAccess);
   RUN_TEST(tr, TestNonconstAccess);
+  RUN_TEST(tr, TestNoChange);
   return 0;
 }
