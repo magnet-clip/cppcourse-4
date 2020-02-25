@@ -5,6 +5,7 @@
 #include <future>
 #include <mutex>
 #include <random>
+#include <shared_mutex>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -12,22 +13,30 @@ using namespace std;
 
 template <typename K, typename V, typename Hash = std::hash<K>>
 class ConcurrentMap {
- public:
+public:
   using MapType = unordered_map<K, V, Hash>;
 
   struct WriteAccess {
-    V& ref_to_value;
-    lock_guard<mutex> guard;
+    // Если случайно поменять местами объявления guard и value в пределах
+    // структуры WriteAccess, то логика с мьютексом перестанет работать. Мьютекс
+    // будет захватываться конструируемым guard уже после того, как произошло
+    // конструирование ref_to_value и поиск key в bucket.data.
+    unique_lock<shared_mutex> guard;
+    V &ref_to_value;
   };
 
   struct ReadAccess {
-    const V& ref_to_value;
+    // А почему в ReadAccess нет мьютекса? Ведь другой поток может записать
+    // новое значение в этот элемент, пока другой его читает.
+    shared_lock<shared_mutex> guard;
+    const V &ref_to_value;
+    // ~ReadAccess() { guard.unlock(); }
   };
 
   explicit ConcurrentMap(size_t bucket_count)
       : _bucket_count(bucket_count), _maps(bucket_count), _locks(bucket_count) {
     for (size_t i = 0; i < _bucket_count; i++) {
-      _locks[i] = new mutex;
+      _locks[i] = new shared_mutex;
     }
   }
 
@@ -37,26 +46,24 @@ class ConcurrentMap {
     }
   }
 
-  WriteAccess operator[](const K& key) {
-    // TODO: not quite sure that's the best possible approach, I mean divide
-    // by hash
-    // cout << "Key is " << key << endl;
+  WriteAccess operator[](const K &key) {
     size_t index = hasher(key) % _bucket_count;
-    cout << "Index is " << index << endl;
-    auto& map = _maps[index];
-    return WriteAccess{map[key], lock_guard(*_locks[index])};
+    return WriteAccess{unique_lock(*_locks[index]), _maps[index][key]};
   }
 
-  const ReadAccess At(const K& key) const {
+  const ReadAccess At(const K &key) const {
     size_t index = hasher(key) % _bucket_count;
-    auto& map = _maps[index];
-    return ReadAccess{map[key]};
+    auto lock = shared_lock(*_locks[index]);
+    if (_maps[index].count(key)) {
+      return ReadAccess{move(lock), _maps[index].at(key)};
+    } else {
+      throw out_of_range("out of range");
+    }
   }
 
-  bool Has(const K& key) const {
+  bool Has(const K &key) const {
     size_t index = hasher(key) % _bucket_count;
-    auto& map = _maps[index];
-    return map.count(key);
+    return _maps[index].count(key);
   }
 
   MapType BuildOrdinaryMap() const {
@@ -65,26 +72,30 @@ class ConcurrentMap {
       lock_guard guard(*_locks[i]);
       res.insert(_maps[i].begin(), _maps[i].end());
     }
+    // cout << res << endl;
     return res;
   }
 
- private:
+private:
   const size_t _bucket_count;
-  mutable vector<MapType> _maps;  // not const as gets mutated
-  vector<mutex*> _locks;          // not const as gets filled in in constructor
+  mutable vector<MapType> _maps; // not const as gets mutated
+  vector<shared_mutex *> _locks; // not const as gets filled in in constructor
   Hash hasher;
 };
 
-void RunConcurrentUpdates(ConcurrentMap<int, int>& cm, size_t thread_count,
+void RunConcurrentUpdates(ConcurrentMap<int, int> &cm, size_t thread_count,
                           int key_count) {
-  auto kernel = [&cm, key_count](int seed) {
+  mutex m;
+  auto kernel = [&m, &cm, key_count](int seed) {
     vector<int> updates(key_count);
     iota(begin(updates), end(updates), -key_count / 2);
     shuffle(begin(updates), end(updates), default_random_engine(seed));
 
     for (int i = 0; i < 2; ++i) {
       for (auto key : updates) {
-        cm[key].ref_to_value++;
+        auto x = cm[key];
+        lock_guard g(m);
+        x.ref_to_value++;
       }
     }
   };
@@ -104,7 +115,7 @@ void TestConcurrentUpdate() {
 
   const auto result = std::as_const(cm).BuildOrdinaryMap();
   ASSERT_EQUAL(result.size(), key_count);
-  for (auto& [k, v] : result) {
+  for (auto &[k, v] : result) {
     AssertEqual(v, 6, "Key = " + to_string(k));
   }
 }
@@ -135,7 +146,7 @@ void TestReadAndWrite() {
 
   for (auto f : {&r1, &r2}) {
     auto result = f->get();
-    ASSERT(all_of(result.begin(), result.end(), [](const string& s) {
+    ASSERT(all_of(result.begin(), result.end(), [](const string &s) {
       return s.empty() || s == "a" || s == "aa";
     }));
   }
@@ -167,7 +178,7 @@ void TestConstAccess() {
 
   const ConcurrentMap<int, string> cm = [&expected] {
     ConcurrentMap<int, string> result(3);
-    for (const auto& [k, v] : expected) {
+    for (const auto &[k, v] : expected) {
       result[k].ref_to_value = v;
     }
     return result;
@@ -178,7 +189,7 @@ void TestConstAccess() {
     futures.push_back(async([&cm, i] {
       try {
         return cm.At(i).ref_to_value;
-      } catch (exception&) {
+      } catch (exception &) {
         return string();
       }
     }));
@@ -198,7 +209,7 @@ void TestStringKeys() {
 
   const ConcurrentMap<string, string> cm = [&expected] {
     ConcurrentMap<string, string> result(2);
-    for (const auto& [k, v] : expected) {
+    for (const auto &[k, v] : expected) {
       result[k].ref_to_value = v;
     }
     return result;
@@ -210,6 +221,10 @@ void TestStringKeys() {
 struct Point {
   int x, y;
 };
+
+ostream &operator<<(ostream &s, const Point &p) {
+  return s << "(" << p.x << ", " << p.y << ")";
+}
 
 struct PointHash {
   size_t operator()(Point p) const {
@@ -249,7 +264,7 @@ void TestHas() {
   cm[1].ref_to_value = 100;
   cm[2].ref_to_value = 200;
 
-  const auto& const_map = std::as_const(cm);
+  const auto &const_map = std::as_const(cm);
   ASSERT(const_map.Has(1));
   ASSERT(const_map.Has(2));
   ASSERT(!const_map.Has(3));
@@ -258,10 +273,10 @@ void TestHas() {
 int main() {
   TestRunner tr;
   RUN_TEST(tr, TestConcurrentUpdate);
-  // RUN_TEST(tr, TestReadAndWrite);
-  // RUN_TEST(tr, TestSpeedup);
-  // RUN_TEST(tr, TestConstAccess);
-  // RUN_TEST(tr, TestStringKeys);
-  // RUN_TEST(tr, TestUserType);
-  // RUN_TEST(tr, TestHas);
+  RUN_TEST(tr, TestReadAndWrite);
+  RUN_TEST(tr, TestSpeedup);
+  RUN_TEST(tr, TestConstAccess);
+  RUN_TEST(tr, TestStringKeys);
+  RUN_TEST(tr, TestUserType);
+  RUN_TEST(tr, TestHas);
 }
