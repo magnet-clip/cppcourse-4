@@ -29,42 +29,11 @@ void PrintCoeff(std::ostream &out, int i, const T &coef, bool printed) {
     out << "^" << i;
   }
 }
-
-template <typename T> class Writer {
-  using It = typename vector<T>::iterator;
-
-public:
-  Writer(It it, function<void()> hook) : _it(it), _hook(hook) {}
-
-  T &operator=(T value) {
-    if (*_it != value) {
-      *_it = value;
-      written = true;
-    }
-    return *_it;
-  }
-
-  ~Writer() {
-    if (*_it == 0 || !written) {
-      _hook();
-    }
-  }
-
-  bool operator==(T value) const { return *_it == value; }
-  bool operator!=(T value) const { return *_it != value; }
-  const T &Get() const { return *_it; }
-
-private:
-  bool written;
-  It _it;
-  function<void()> _hook;
-};
-
-template <typename T> ostream &operator<<(ostream &s, Writer<T> w) {
-  return s << w.Get();
-}
+template <typename T> class Writer;
 
 template <typename T> class Polynomial {
+  friend class Writer<T>;
+
 private:
   vector<T> coeffs_ = {0};
 
@@ -117,14 +86,7 @@ public:
     return degree < coeffs_.size() ? coeffs_[degree] : 0;
   }
 
-  Writer<T> operator[](size_t degree) {
-    size_t last_degree = coeffs_.size();
-    if (degree >= coeffs_.size()) {
-      coeffs_.resize(degree + 1);
-    }
-    typename vector<T>::iterator x = next(coeffs_.begin(), degree);
-    return Writer<T>(x, [this, last_degree]() { coeffs_.resize(last_degree); });
-  }
+  Writer<T> operator[](size_t degree) { return Writer<T>(*this, degree); }
 
   T operator()(const T &x) const {
     T res = 0;
@@ -142,6 +104,48 @@ public:
   const_iterator end() const { return coeffs_.cend(); }
 };
 
+template <typename T> class Writer {
+
+public:
+  Writer(Polynomial<T> &poly, size_t pos) : _pos(pos), _poly(poly) {
+    if (_poly.coeffs_.size() <= _pos) {
+      _value = 0;
+    } else {
+      _value = _poly.coeffs_[_pos];
+    }
+  }
+
+  operator T() const { return std::as_const(_poly)[_pos]; }
+
+  T &operator=(T value) {
+    if (value == 0) {
+      if (_poly.coeffs_.size() > _pos) {
+        _poly.coeffs_[_pos] = 0;
+        _poly.Shrink();
+      }
+      _value = 0;
+    } else {
+      if (_poly.coeffs_.size() <= _pos) {
+        _poly.coeffs_.resize(_pos + 1);
+      }
+      _value = _poly.coeffs_[_pos] = value;
+    }
+    return _value;
+  }
+
+  bool operator==(T value) const { return _value == value; }
+  bool operator!=(T value) const { return _value != value; }
+  const T &Get() const { return _value; }
+
+private:
+  size_t _pos;
+  Polynomial<T> &_poly;
+  T _value;
+};
+
+template <typename T> ostream &operator<<(ostream &s, Writer<T> w) {
+  return s << w.Get();
+}
 template <typename T>
 std::ostream &operator<<(std::ostream &out, const Polynomial<T> &p) {
   bool printed = false;
@@ -299,9 +303,33 @@ void TestNoChange() {
   Polynomial<int> p;
   p[2] = 1;
   ASSERT_EQUAL(p.Degree(), 2);
-  auto x = p[5];
+  int x = p[5];
   ASSERT_EQUAL(x, 0);
   ASSERT_EQUAL(p.Degree(), 2);
+}
+
+void TestShrink() {
+  Polynomial<int> p;
+  p[2] = 1;
+  ASSERT_EQUAL(p.Degree(), 2);
+  p[3] = 2;
+  ASSERT_EQUAL(p.Degree(), 3);
+  p[5] = 7;
+  ASSERT_EQUAL(p.Degree(), 5);
+  auto x = p[5];
+  ASSERT_EQUAL(x, 7);
+  x = 0;
+  ASSERT_EQUAL(p.Degree(), 3);
+  p[3] = 0;
+  ASSERT_EQUAL(p.Degree(), 2);
+  p[1] = 100;
+  ASSERT_EQUAL(p.Degree(), 2);
+  p[2] = 0;
+  ASSERT_EQUAL(p.Degree(), 1);
+  p[1] = 0;
+  ASSERT_EQUAL(p.Degree(), 0);
+  p[3] = 2;
+  ASSERT_EQUAL(p.Degree(), 3);
 }
 
 int main() {
@@ -314,5 +342,6 @@ int main() {
   RUN_TEST(tr, TestConstAccess);
   RUN_TEST(tr, TestNonconstAccess);
   RUN_TEST(tr, TestNoChange);
+  RUN_TEST(tr, TestShrink);
   return 0;
 }
