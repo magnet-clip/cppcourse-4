@@ -1,14 +1,14 @@
-#include "test_runner.h"
 #include "profile.h"
+#include "test_runner.h"
 
-#include <vector>
-#include <iostream>
 #include <algorithm>
+#include <iostream>
+#include <vector>
 
 using namespace std;
 
-template<typename T>
-void PrintCoeff(std::ostream& out, int i, const T& coef, bool printed) {
+template <typename T>
+void PrintCoeff(std::ostream &out, int i, const T &coef, bool printed) {
   bool coeffPrinted = false;
   if (coef == 1 && i > 0) {
     out << (printed ? "+" : "");
@@ -29,10 +29,31 @@ void PrintCoeff(std::ostream& out, int i, const T& coef, bool printed) {
   }
 }
 
-template<typename T>
-class Polynomial {
+template <typename T> class Writer {
+  using It = typename vector<T>::iterator;
+
+public:
+  Writer(It it) : _it(it) {}
+
+  T &operator=(T value) {
+    *_it = value;
+    return *_it;
+  }
+
+  bool operator==(T value) { return *_it == value; }
+  const T &Get() const { return *_it; }
+
 private:
-  std::vector<T> coeffs_ = {0};
+  It _it;
+};
+
+template <typename T> ostream &operator<<(ostream &s, Writer<T> w) {
+  return s << w.Get();
+}
+
+template <typename T> class Polynomial {
+private:
+  vector<T> coeffs_ = {0};
 
   void Shrink() {
     while (coeffs_.size() > 1 && coeffs_.back() == 0) {
@@ -42,28 +63,22 @@ private:
 
 public:
   Polynomial() = default;
-  Polynomial(vector<T> coeffs) : coeffs_(std::move(coeffs)) {
-    Shrink();
-  }
+  Polynomial(vector<T> coeffs) : coeffs_(std::move(coeffs)) { Shrink(); }
 
-  template<typename Iterator>
+  template <typename Iterator>
   Polynomial(Iterator first, Iterator last) : coeffs_(first, last) {
     Shrink();
   }
 
-  bool operator ==(const Polynomial& other) const {
+  bool operator==(const Polynomial &other) const {
     return coeffs_ == other.coeffs_;
   }
 
-  bool operator !=(const Polynomial& other) const {
-    return !operator==(other);
-  }
+  bool operator!=(const Polynomial &other) const { return !operator==(other); }
 
-  int Degree() const {
-    return coeffs_.size() - 1;
-  }
+  int Degree() const { return coeffs_.size() - 1; }
 
-  Polynomial& operator +=(const Polynomial& r) {
+  Polynomial &operator+=(const Polynomial &r) {
     if (r.coeffs_.size() > coeffs_.size()) {
       coeffs_.resize(r.coeffs_.size());
     }
@@ -74,7 +89,7 @@ public:
     return *this;
   }
 
-  Polynomial& operator -=(const Polynomial& r) {
+  Polynomial &operator-=(const Polynomial &r) {
     if (r.coeffs_.size() > coeffs_.size()) {
       coeffs_.resize(r.coeffs_.size());
     }
@@ -85,13 +100,19 @@ public:
     return *this;
   }
 
-  T operator [](size_t degree) const {
+  T operator[](size_t degree) const {
     return degree < coeffs_.size() ? coeffs_[degree] : 0;
   }
 
-  // Реализуйте неконстантную версию operator[]
+  Writer<T> operator[](size_t degree) {
+    if (degree >= coeffs_.size()) {
+      coeffs_.resize(degree + 1);
+    }
+    typename vector<T>::iterator x = next(coeffs_.begin(), degree);
+    return Writer<T>(x);
+  }
 
-  T operator ()(const T& x) const {
+  T operator()(const T &x) const {
     T res = 0;
     for (auto it = coeffs_.rbegin(); it != coeffs_.rend(); ++it) {
       res *= x;
@@ -102,17 +123,13 @@ public:
 
   using const_iterator = typename std::vector<T>::const_iterator;
 
-  const_iterator begin() const {
-    return coeffs_.cbegin();
-  }
+  const_iterator begin() const { return coeffs_.cbegin(); }
 
-  const_iterator end() const {
-    return coeffs_.cend();
-  }
+  const_iterator end() const { return coeffs_.cend(); }
 };
 
 template <typename T>
-std::ostream& operator <<(std::ostream& out, const Polynomial<T>& p) {
+std::ostream &operator<<(std::ostream &out, const Polynomial<T> &p) {
   bool printed = false;
   for (int i = p.Degree(); i >= 0; --i) {
     if (p[i] != 0) {
@@ -124,13 +141,13 @@ std::ostream& operator <<(std::ostream& out, const Polynomial<T>& p) {
 }
 
 template <typename T>
-Polynomial<T> operator +(Polynomial<T> lhs, const Polynomial<T>& rhs) {
+Polynomial<T> operator+(Polynomial<T> lhs, const Polynomial<T> &rhs) {
   lhs += rhs;
   return lhs;
 }
 
 template <typename T>
-Polynomial<T> operator -(Polynomial<T> lhs, const Polynomial<T>& rhs) {
+Polynomial<T> operator-(Polynomial<T> lhs, const Polynomial<T> &rhs) {
   lhs -= rhs;
   return lhs;
 }
@@ -153,7 +170,8 @@ void TestCreation() {
     const vector<int> coeffs = {4, 9, 7, 8, 12};
     Polynomial<int> from_iterators(begin(coeffs), end(coeffs));
     ASSERT_EQUAL(from_iterators.Degree(), coeffs.size() - 1);
-    ASSERT(std::equal(cbegin(from_iterators), cend(from_iterators), begin(coeffs)));
+    ASSERT(std::equal(cbegin(from_iterators), cend(from_iterators),
+                      begin(coeffs)));
   }
 }
 
@@ -213,7 +231,7 @@ void TestEvaluation() {
 }
 
 void TestConstAccess() {
-  const Polynomial<int> poly(std::initializer_list<int> {1, 2, 3, 4, 5});
+  const Polynomial<int> poly(std::initializer_list<int>{1, 2, 3, 4, 5});
 
   ASSERT_EQUAL(poly[0], 1);
   ASSERT_EQUAL(poly[1], 2);
