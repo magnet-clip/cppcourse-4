@@ -108,7 +108,7 @@ template <typename T> class Writer {
 
 public:
   Writer(Polynomial<T> &poly, size_t pos) : _pos(pos), _poly(poly) {
-    if (_poly.coeffs_.size() <= _pos) {
+    if (_poly.coeffs_.size() <= _pos) { // should we not resize it immediately?
       _value = 0;
     } else {
       _value = _poly.coeffs_[_pos];
@@ -133,9 +133,11 @@ public:
     return _value;
   }
 
-  bool operator==(T value) const { return _value == value; }
-  bool operator!=(T value) const { return _value != value; }
-  const T &Get() const { return _value; }
+  bool operator==(T value) const { return Get() == value; }
+  bool operator!=(T value) const { return Get() != value; }
+  const T Get() const {
+    return _pos >= _poly.coeffs_.size() ? 0 : _poly.coeffs_[_pos];
+  }
 
 private:
   size_t _pos;
@@ -308,6 +310,21 @@ void TestNoChange() {
   ASSERT_EQUAL(p.Degree(), 2);
 }
 
+void TestInitialExpand() {
+  Polynomial<int> p;
+  ASSERT_EQUAL(p.Degree(), 0);
+  auto z = p[1];
+  ASSERT_EQUAL(p.Degree(), 0);
+  z = 2;
+  ASSERT_EQUAL(p.Degree(), 1);
+  int q = p[2];
+  ASSERT_EQUAL(q, 0);
+  ASSERT_EQUAL(p.Degree(), 1);
+  q = 3;
+  ASSERT_EQUAL(p.Degree(), 1);
+  ASSERT_EQUAL(p[2], 0);
+}
+
 void TestShrink() {
   Polynomial<int> p;
   p[2] = 1;
@@ -330,6 +347,14 @@ void TestShrink() {
   ASSERT_EQUAL(p.Degree(), 0);
   p[3] = 2;
   ASSERT_EQUAL(p.Degree(), 3);
+  auto q = p[4];
+  ASSERT_EQUAL(p.Degree(), 3);
+  q = 1000;
+  ASSERT_EQUAL(p.Degree(), 4);
+  ASSERT_EQUAL(q, 1000);
+  p[4] = 0;
+  ASSERT_EQUAL(p.Degree(), 3);
+  ASSERT_EQUAL(q, 0);
 }
 
 int main() {
@@ -342,6 +367,7 @@ int main() {
   RUN_TEST(tr, TestConstAccess);
   RUN_TEST(tr, TestNonconstAccess);
   RUN_TEST(tr, TestNoChange);
+  RUN_TEST(tr, TestInitialExpand);
   RUN_TEST(tr, TestShrink);
   return 0;
 }
