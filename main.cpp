@@ -1,13 +1,12 @@
-#include "test_runner.h"
 #include <functional>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include "test_runner.h"
 
 using namespace std;
-
 
 struct Email {
   string from;
@@ -15,9 +14,8 @@ struct Email {
   string body;
 };
 
-
 class Worker {
-public:
+ public:
   virtual ~Worker() = default;
   virtual void Process(unique_ptr<Email> email) = 0;
   virtual void Run() {
@@ -25,46 +23,41 @@ public:
     throw logic_error("Unimplemented");
   }
 
-protected:
+ protected:
   // реализации должны вызывать PassOn, чтобы передать объект дальше
   // по цепочке обработчиков
   void PassOn(unique_ptr<Email> email) const;
 
-public:
+ public:
   void SetNext(unique_ptr<Worker> next);
 };
 
-
 class Reader : public Worker {
-public:
+ public:
   // реализуйте класс
 };
-
 
 class Filter : public Worker {
-public:
+ public:
   using Function = function<bool(const Email&)>;
 
-public:
+ public:
   // реализуйте класс
 };
-
 
 class Copier : public Worker {
-public:
+ public:
   // реализуйте класс
 };
-
 
 class Sender : public Worker {
-public:
+ public:
   // реализуйте класс
 };
-
 
 // реализуйте класс
 class PipelineBuilder {
-public:
+ public:
   // добавляет в качестве первого обработчика Reader
   explicit PipelineBuilder(istream& in);
 
@@ -79,49 +72,81 @@ public:
 
   // возвращает готовую цепочку обработчиков
   unique_ptr<Worker> Build();
+
+ private:
+  vector<Email> _letters;
 };
 
+enum class EmailMode { From, To, Body };
+EmailMode NextMode(EmailMode mode) {
+  return static_cast<EmailMode>((static_cast<int>(mode) + 1) % 3);
+}
+
+PipelineBuilder::PipelineBuilder(istream& is) {
+  EmailMode mode = EmailMode::From;
+  string from, to, body;
+  for (string line; getline(is, line);) {
+    if (mode == EmailMode::From) {
+      from = line;
+    } else if (mode == EmailMode::To) {
+      to = line;
+    } else if (mode == EmailMode::Body) {
+      _letters.push_back({move(from), move(to), move(line)});
+    }
+    mode = NextMode(mode);
+  }
+}
+
+PipelineBuilder& PipelineBuilder::FilterBy(Filter::Function filter) {
+  return *this;
+}
+
+// добавляет новый обработчик Copier
+PipelineBuilder& PipelineBuilder::CopyTo(string recipient) { return *this; }
+
+// добавляет новый обработчик Sender
+PipelineBuilder& PipelineBuilder::Send(ostream& out) { return *this; }
+
+// возвращает готовую цепочку обработчиков
+unique_ptr<Worker> PipelineBuilder::Build() { return nullptr; }
 
 void TestSanity() {
-  string input = (
-    "erich@example.com\n"
-    "richard@example.com\n"
-    "Hello there\n"
+  string input =
+      ("erich@example.com\n"
+       "richard@example.com\n"
+       "Hello there\n"
 
-    "erich@example.com\n"
-    "ralph@example.com\n"
-    "Are you sure you pressed the right button?\n"
+       "erich@example.com\n"
+       "ralph@example.com\n"
+       "Are you sure you pressed the right button?\n"
 
-    "ralph@example.com\n"
-    "erich@example.com\n"
-    "I do not make mistakes of that kind\n"
-  );
+       "ralph@example.com\n"
+       "erich@example.com\n"
+       "I do not make mistakes of that kind\n");
   istringstream inStream(input);
   ostringstream outStream;
 
   PipelineBuilder builder(inStream);
-  builder.FilterBy([](const Email& email) {
-    return email.from == "erich@example.com";
-  });
+  builder.FilterBy(
+      [](const Email& email) { return email.from == "erich@example.com"; });
   builder.CopyTo("richard@example.com");
   builder.Send(outStream);
   auto pipeline = builder.Build();
 
   pipeline->Run();
 
-  string expectedOutput = (
-    "erich@example.com\n"
-    "richard@example.com\n"
-    "Hello there\n"
+  string expectedOutput =
+      ("erich@example.com\n"
+       "richard@example.com\n"
+       "Hello there\n"
 
-    "erich@example.com\n"
-    "ralph@example.com\n"
-    "Are you sure you pressed the right button?\n"
+       "erich@example.com\n"
+       "ralph@example.com\n"
+       "Are you sure you pressed the right button?\n"
 
-    "erich@example.com\n"
-    "richard@example.com\n"
-    "Are you sure you pressed the right button?\n"
-  );
+       "erich@example.com\n"
+       "richard@example.com\n"
+       "Are you sure you pressed the right button?\n");
 
   ASSERT_EQUAL(expectedOutput, outStream.str());
 }
