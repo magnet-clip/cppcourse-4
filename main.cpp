@@ -101,7 +101,9 @@ private:
 };
 
 void Filter::Process(unique_ptr<Email> email) {
-  // TODO
+  if (_filter(*email)) {
+    PassOn(move(email));
+  }
 }
 
 class Copier : public Worker {
@@ -115,7 +117,13 @@ private:
 };
 
 void Copier::Process(unique_ptr<Email> email) {
-  // TODO
+  if (email->to != _address) {
+    Email copy = {email->from, _address, email->body};
+    PassOn(move(email));
+    PassOn(move(make_unique<Email>(copy)));
+  } else {
+    PassOn(move(email));
+  }
 }
 
 class Sender : public Worker {
@@ -130,7 +138,10 @@ private:
 
 Sender::Sender(ostream &out) : _out(move(out)) {}
 
-void Sender::Process(unique_ptr<Email> email) { _out << *email; }
+void Sender::Process(unique_ptr<Email> email) {
+  _out << *email;
+  PassOn(move(email));
+}
 
 class PipelineBuilder {
 public:
@@ -151,8 +162,8 @@ public:
 
 private:
   vector<Email> _letters;
-  unique_ptr<Worker> _reader;
-  Worker *_last = nullptr;
+  unique_ptr<Worker> _reader; // owning pointer
+  Worker *_last = nullptr;    // non-owning pointer
 };
 
 PipelineBuilder::PipelineBuilder(istream &is) {
@@ -161,17 +172,23 @@ PipelineBuilder::PipelineBuilder(istream &is) {
 }
 
 PipelineBuilder &PipelineBuilder::FilterBy(Filter::Function filter) {
-  _last->SetNext(move(unique_ptr<Worker>(new Filter(filter))));
+  auto filter_step = new Filter(filter);
+  _last->SetNext(move(unique_ptr<Worker>(filter_step)));
+  _last = filter_step;
   return *this;
 }
 
 PipelineBuilder &PipelineBuilder::CopyTo(string recipient) {
-  _last->SetNext(move(unique_ptr<Worker>(new Copier(recipient))));
+  auto copier_step = new Copier(recipient);
+  _last->SetNext(move(unique_ptr<Worker>(copier_step)));
+  _last = copier_step;
   return *this;
 }
 
 PipelineBuilder &PipelineBuilder::Send(ostream &out) {
-  _last->SetNext(move(unique_ptr<Worker>(new Sender(out))));
+  auto sender_step = new Sender(out);
+  _last->SetNext(move(unique_ptr<Worker>(sender_step)));
+  _last = sender_step;
   return *this;
 }
 
