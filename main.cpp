@@ -19,6 +19,13 @@ EmailMode NextMode(EmailMode mode) {
   return static_cast<EmailMode>((static_cast<int>(mode) + 1) % 3);
 }
 
+ostream &operator<<(ostream &os, Email email) {
+  os << email.from << endl;
+  os << email.to << endl;
+  os << email.body << endl;
+  return os;
+}
+
 class Worker {
 public:
   virtual ~Worker() = default;
@@ -36,7 +43,9 @@ private:
 };
 
 void Worker::Run() { throw logic_error("Unimplemented"); }
+
 void Worker::SetNext(unique_ptr<Worker> next) { _next = move(next); }
+
 void Worker::PassOn(unique_ptr<Email> email) const {
   if (_next) {
     _next->Process(move(email));
@@ -73,7 +82,10 @@ void Reader::Run() {
   }
 }
 
-void Reader::Process(unique_ptr<Email> email) {}
+void Reader::Process(unique_ptr<Email> email) {
+  // do nothing here, possibly should throw an exception as this is undesired
+  // behaviour to call this method directly
+}
 
 class Filter : public Worker {
 public:
@@ -87,7 +99,10 @@ public:
 private:
   Function _filter;
 };
-void Filter::Process(unique_ptr<Email> email) {}
+
+void Filter::Process(unique_ptr<Email> email) {
+  // TODO
+}
 
 class Copier : public Worker {
 public:
@@ -98,17 +113,25 @@ public:
 private:
   string _address;
 };
-void Copier::Process(unique_ptr<Email> email) {}
+
+void Copier::Process(unique_ptr<Email> email) {
+  // TODO
+}
 
 class Sender : public Worker {
 public:
-  Sender() = default;
+  Sender(ostream &out);
   virtual void Process(unique_ptr<Email> email) override;
   virtual ~Sender() = default;
-};
-void Sender::Process(unique_ptr<Email> email) {}
 
-// реализуйте класс
+private:
+  ostream &&_out;
+};
+
+Sender::Sender(ostream &out) : _out(move(out)) {}
+
+void Sender::Process(unique_ptr<Email> email) { _out << *email; }
+
 class PipelineBuilder {
 public:
   // добавляет в качестве первого обработчика Reader
@@ -129,20 +152,28 @@ public:
 private:
   vector<Email> _letters;
   unique_ptr<Worker> _reader;
+  Worker *_last = nullptr;
 };
 
 PipelineBuilder::PipelineBuilder(istream &is) {
-  _reader = unique_ptr<Worker>(new Reader(is));
+  _last = new Reader(is);
+  _reader = unique_ptr<Worker>(_last);
 }
 
 PipelineBuilder &PipelineBuilder::FilterBy(Filter::Function filter) {
-  auto filterExpression = Filter(filter);
+  _last->SetNext(move(unique_ptr<Worker>(new Filter(filter))));
   return *this;
 }
 
-PipelineBuilder &PipelineBuilder::CopyTo(string recipient) { return *this; }
+PipelineBuilder &PipelineBuilder::CopyTo(string recipient) {
+  _last->SetNext(move(unique_ptr<Worker>(new Copier(recipient))));
+  return *this;
+}
 
-PipelineBuilder &PipelineBuilder::Send(ostream &out) { return *this; }
+PipelineBuilder &PipelineBuilder::Send(ostream &out) {
+  _last->SetNext(move(unique_ptr<Worker>(new Sender(out))));
+  return *this;
+}
 
 unique_ptr<Worker> PipelineBuilder::Build() { return move(_reader); }
 
