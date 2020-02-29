@@ -2,6 +2,7 @@
 
 using namespace std;
 
+template <class T>
 class ShapeBase : public IShape {
  public:
   virtual void SetPosition(Point point) override { _position = point; }
@@ -15,7 +16,14 @@ class ShapeBase : public IShape {
   }
   virtual ITexture* GetTexture() const override { return _texture.get(); }
 
-  virtual unique_ptr<IShape> Clone() const override { return nullptr; }
+  virtual unique_ptr<IShape> Clone() const override {
+    T* copy = new T();
+    copy->SetPosition(GetPosition());
+    copy->SetSize(GetSize());
+    copy->_texture = _texture;
+    return unique_ptr<IShape>(copy);
+  }
+
   virtual void Draw(Image&) const override = 0;
 
  protected:
@@ -24,11 +32,11 @@ class ShapeBase : public IShape {
   shared_ptr<ITexture> _texture;
 };
 
-class Ellipse : public ShapeBase {
+class Ellipse : public ShapeBase<Ellipse> {
  public:
   virtual void Draw(Image&) const override {}
 };
-class Rectangle : public ShapeBase {
+class Rectangle : public ShapeBase<Rectangle> {
  public:
   virtual void Draw(Image&) const override {}
 };
