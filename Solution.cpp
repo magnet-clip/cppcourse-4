@@ -30,13 +30,13 @@ class ShapeBase : public IShape {
     // draw nothing if image is zero-sized
     if (image.size() == 0) return;
 
-    // draw nothing should the shape be out of bounds
-    if (_position.y > static_cast<int>(image.size())) return;
-    if (_position.x > static_cast<int>(image[0].length())) return;
-
     // possible overflow; could make check
     auto rows_count = static_cast<int>(image.size());
     auto column_count = static_cast<int>(image[0].length());
+
+    // draw nothing should the shape be out of bounds
+    if (_position.y > rows_count) return;
+    if (_position.x > column_count) return;
 
     auto last_row_idx = min(_position.y + _size.height, rows_count);
     auto last_col_idx = min(_position.x + _size.width, column_count);
