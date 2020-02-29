@@ -8,13 +8,12 @@
 using namespace std;
 
 class ValueExpression : public Expression {
-public:
+ public:
   ValueExpression(int value);
-  virtual ~ValueExpression() = default;
   virtual int Evaluate() const override;
   virtual string ToString() const override;
 
-private:
+ private:
   int _value;
 };
 
@@ -26,12 +25,12 @@ string ValueExpression::ToString() const {
 
 template <typename BinaryOperation, char op>
 class BinaryExpression : public Expression {
+ public:
   BinaryExpression(ExpressionPtr expr1, ExpressionPtr expr2);
-  virtual ~BinaryExpression() = default;
   virtual int Evaluate() const override;
   virtual string ToString() const override;
 
-private:
+ private:
   ExpressionPtr _expr1, _expr2;
 };
 
@@ -47,18 +46,28 @@ string BinaryExpression<BinaryOperation, op>::ToString() const {
 
 template <typename BinaryOperation, char op>
 int BinaryExpression<BinaryOperation, op>::Evaluate() const {
-  return BinaryOperation(_expr1->Evaluate(), _expr2->Evaluate());
+  return BinaryOperation{}(_expr1->Evaluate(), _expr2->Evaluate());
 }
 
 class SumExpression : public BinaryExpression<plus<int>, '+'> {
-public:
-  virtual ~SumExpression() = default;
+ public:
+  using BinaryExpression::BinaryExpression;
 };
 
 class ProductExpression : public BinaryExpression<multiplies<int>, '*'> {
-public:
-  virtual ~ProductExpression() = default;
+ public:
+  using BinaryExpression::BinaryExpression;
 };
+
+ExpressionPtr Value(int value) {
+  return ExpressionPtr(new ValueExpression(value));
+}
+ExpressionPtr Sum(ExpressionPtr left, ExpressionPtr right) {
+  return ExpressionPtr(new SumExpression(move(left), move(right)));
+}
+ExpressionPtr Product(ExpressionPtr left, ExpressionPtr right) {
+  return ExpressionPtr(new ProductExpression(move(left), move(right)));
+}
 
 string Print(const Expression *e) {
   if (!e) {
