@@ -19,9 +19,7 @@ class ValueExpression : public Expression {
 
 ValueExpression::ValueExpression(int value) : _value(value) {}
 int ValueExpression::Evaluate() const { return _value; }
-string ValueExpression::ToString() const {
-  return "(" + to_string(_value) + ")";
-}
+string ValueExpression::ToString() const { return to_string(_value); }
 
 template <typename BinaryOperation, char op>
 class BinaryExpression : public Expression {
@@ -41,7 +39,7 @@ BinaryExpression<BinaryOperation, op>::BinaryExpression(ExpressionPtr expr1,
 
 template <typename BinaryOperation, char op>
 string BinaryExpression<BinaryOperation, op>::ToString() const {
-  return "(" + _expr1->ToString() + op + _expr2->ToString() + ")";
+  return "(" + _expr1->ToString() + ")" + op + "(" + _expr2->ToString() + ")";
 }
 
 template <typename BinaryOperation, char op>
