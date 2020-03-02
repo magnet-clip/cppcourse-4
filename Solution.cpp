@@ -1,6 +1,7 @@
 #include "Common.h"
 
 #include <iostream>
+#include <list>
 #include <map>
 #include <mutex>
 #include <unordered_map>
@@ -14,49 +15,52 @@ public:
 
   BookPtr GetBook(const string &book_name) override {
     lock_guard guard(_cache_mutex);
-    auto book = _cache.Find(book_name);
-    if (!book) {
+    auto book_reference = _cache.Find(book_name);
+    if (!book_reference.has_value()) {
       auto unpacked_book = _unpacker->UnpackBook(book_name);
-      book = BookPtr(unpacked_book.release());
+      auto book = BookPtr(unpacked_book.release());
       _cache.Add(book);
+      return book;
     } else {
-      _cache.Up(book);
+      _cache.Up(book_reference.value().second);
+      return book_reference->first;
     }
-    return book;
   }
 
 private:
   struct Cache {
-    using PriorityCache = map<size_t, BookPtr>;
-    using NameCache = unordered_map<string, BookPtr>;
+    using PriorityCache = list<BookPtr>;
+    using BookReference = pair<BookPtr, PriorityCache::iterator>;
+    using NameCache = unordered_map<string, BookReference>;
 
     explicit Cache(size_t memory_limit) : _memory_limit(memory_limit) {}
 
-    BookPtr Find(const string &name) {
+    optional<BookReference> Find(const string &name) {
       auto it = _name.find(name);
       if (it != _name.end()) {
         return it->second;
       }
-      return nullptr;
+      return {};
     }
 
     void Add(const BookPtr &book) {
       _total_memory += book->GetContent().length();
-      _priority[_max_priority] = book;
-      _name[book->GetName()] = book;
-      _max_priority++;
+      _priority.push_back(book);
+      _name[book->GetName()] = make_pair(book, prev(_priority.end()));
       Cleanup();
     }
 
-    void Up(BookPtr book) {}
+    void Up(PriorityCache::iterator it) {
+      // just need to move this book to end of queue
+      _priority.splice(_priority.end(), _priority, it);
+    }
 
   private:
     void Cleanup() {
       while (_total_memory > _memory_limit) {
-        auto min_priority = prev(_priority.end());
-        auto book = min_priority->second;
+        auto book = _priority.front();
         _total_memory -= book->GetContent().length();
-        _priority.erase(min_priority);
+        _priority.pop_front();
         _name.erase(book->GetName());
       }
     }
@@ -64,7 +68,6 @@ private:
     PriorityCache _priority;
     NameCache _name;
     size_t _memory_limit = 0;
-    size_t _max_priority = 0;
     size_t _total_memory = 0;
   };
 
