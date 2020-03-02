@@ -1,5 +1,6 @@
 #include "Common.h"
 
+#include <iostream>
 #include <map>
 #include <mutex>
 #include <unordered_map>
@@ -16,7 +17,7 @@ public:
     auto book = _cache.Find(book_name);
     if (!book) {
       auto unpacked_book = _unpacker->UnpackBook(book_name);
-      book = shared_ptr<const IBook>(unpacked_book.release());
+      book = BookPtr(unpacked_book.release());
       _cache.Add(book);
     } else {
       _cache.Up(book);
@@ -40,6 +41,7 @@ private:
     }
 
     void Add(const BookPtr &book) {
+      _total_memory += book->GetContent().length();
       _priority[_max_priority] = book;
       _name[book->GetName()] = book;
       _max_priority++;
@@ -49,12 +51,21 @@ private:
     void Up(BookPtr book) {}
 
   private:
-    void Cleanup() {}
+    void Cleanup() {
+      while (_total_memory > _memory_limit) {
+        auto min_priority = prev(_priority.end());
+        auto book = min_priority->second;
+        _total_memory -= book->GetContent().length();
+        _priority.erase(min_priority);
+        _name.erase(book->GetName());
+      }
+    }
 
     PriorityCache _priority;
     NameCache _name;
-    size_t _memory_limit;
-    size_t _max_priority;
+    size_t _memory_limit = 0;
+    size_t _max_priority = 0;
+    size_t _total_memory = 0;
   };
 
   shared_ptr<IBooksUnpacker> _unpacker;
