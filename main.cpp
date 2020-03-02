@@ -17,24 +17,23 @@ using namespace std;
 // элементы. Собственно, тестирующая система курсеры имеет как раз более
 // продвинутую реализацию.
 class Book : public IBook {
- public:
-  Book(string name, string content, atomic<size_t>& memory_used_by_books)
-      : name_(move(name)),
-        content_(move(content)),
+public:
+  Book(string name, string content, atomic<size_t> &memory_used_by_books)
+      : name_(move(name)), content_(move(content)),
         memory_used_by_books_(memory_used_by_books) {
     memory_used_by_books_ += content_.size();
   }
 
   ~Book() { memory_used_by_books_ -= content_.size(); }
 
-  const string& GetName() const override { return name_; }
+  const string &GetName() const override { return name_; }
 
-  const string& GetContent() const override { return content_; }
+  const string &GetContent() const override { return content_; }
 
- private:
+private:
   string name_;
   string content_;
-  atomic<size_t>& memory_used_by_books_;
+  atomic<size_t> &memory_used_by_books_;
 };
 
 // Данная реализация интерфейса IBooksUnpacker позволяет отследить объём памяти,
@@ -43,8 +42,8 @@ class Book : public IBook {
 // написать другую реализацию. Собственно, тестирующая система курсеры имеет как
 // раз более продвинутую реализацию.
 class BooksUnpacker : public IBooksUnpacker {
- public:
-  unique_ptr<IBook> UnpackBook(const string& book_name) override {
+public:
+  unique_ptr<IBook> UnpackBook(const string &book_name) override {
     ++unpacked_books_count_;
     return make_unique<Book>(book_name,
                              "Dummy content of the book " + book_name,
@@ -55,7 +54,7 @@ class BooksUnpacker : public IBooksUnpacker {
 
   int GetUnpackedBooksCount() const { return unpacked_books_count_; }
 
- private:
+private:
   // Шаблонный класс atomic позволяет безопасно использовать скалярный тип из
   // нескольких потоков. В противном случае у нас было бы состояние гонки.
   atomic<size_t> memory_used_by_books_ = 0;
@@ -67,37 +66,37 @@ struct Library {
   unordered_map<string, unique_ptr<IBook>> content;
   size_t size_in_bytes = 0;
 
-  explicit Library(vector<string> a_book_names, IBooksUnpacker& unpacker)
+  explicit Library(vector<string> a_book_names, IBooksUnpacker &unpacker)
       : book_names(std::move(a_book_names)) {
-    for (const auto& book_name : book_names) {
-      auto& book_content = content[book_name];
+    for (const auto &book_name : book_names) {
+      auto &book_content = content[book_name];
       book_content = unpacker.UnpackBook(book_name);
       size_in_bytes += book_content->GetContent().size();
     }
   }
 };
 
-void TestUnpacker(const Library& lib) {
+void TestUnpacker(const Library &lib) {
   BooksUnpacker unpacker;
-  for (const auto& book_name : lib.book_names) {
+  for (const auto &book_name : lib.book_names) {
     auto book = unpacker.UnpackBook(book_name);
     ASSERT_EQUAL(book->GetName(), book_name);
   }
 }
 
-void TestMaxMemory(const Library& lib) {
+void TestMaxMemory(const Library &lib) {
   auto unpacker = make_shared<BooksUnpacker>();
   ICache::Settings settings;
   settings.max_memory = lib.size_in_bytes / 2;
   auto cache = MakeCache(unpacker, settings);
 
-  for (const auto& [name, book] : lib.content) {
+  for (const auto &[name, book] : lib.content) {
     cache->GetBook(name);
     ASSERT(unpacker->GetMemoryUsedByBooks() <= settings.max_memory);
   }
 }
 
-void TestCaching(const Library& lib) {
+void TestCaching(const Library &lib) {
   auto unpacker = make_shared<BooksUnpacker>();
   ICache::Settings settings;
   settings.max_memory = lib.size_in_bytes;
@@ -114,7 +113,7 @@ void TestCaching(const Library& lib) {
   ASSERT_EQUAL(unpacker->GetUnpackedBooksCount(), 1);
 }
 
-void TestSmallCache(const Library& lib) {
+void TestSmallCache(const Library &lib) {
   auto unpacker = make_shared<BooksUnpacker>();
   ICache::Settings settings;
   settings.max_memory =
@@ -125,7 +124,7 @@ void TestSmallCache(const Library& lib) {
   ASSERT_EQUAL(unpacker->GetMemoryUsedByBooks(), size_t(0));
 }
 
-void TestAsync(const Library& lib) {
+void TestAsync(const Library &lib) {
   static const int tasks_count = 10;
   static const int trials_count = 10000;
 
@@ -141,7 +140,7 @@ void TestAsync(const Library& lib) {
       default_random_engine gen;
       uniform_int_distribution<size_t> dis(0, lib.book_names.size() - 1);
       for (int i = 0; i < trials_count; ++i) {
-        const auto& book_name = lib.book_names[dis(gen)];
+        const auto &book_name = lib.book_names[dis(gen)];
         ASSERT_EQUAL(cache->GetBook(book_name)->GetContent(),
                      lib.content.find(book_name)->second->GetContent());
       }
@@ -152,7 +151,7 @@ void TestAsync(const Library& lib) {
   }
 
   // вызов метода get пробрасывает исключения в основной поток
-  for (auto& task : tasks) {
+  for (auto &task : tasks) {
     task.get();
   }
 }
