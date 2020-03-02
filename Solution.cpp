@@ -18,19 +18,24 @@ public:
     auto book_reference = _cache.Find(book_name);
     if (!book_reference.has_value()) {
       auto unpacked_book = _unpacker->UnpackBook(book_name);
+      // converting unique pointer to const shared one
       auto book = BookPtr(unpacked_book.release());
       _cache.Add(book);
       return book;
     } else {
-      _cache.Up(book_reference.value().second);
-      return book_reference->first;
+      _cache.Up(book_reference->iterator);
+      return book_reference->pointer;
     }
   }
 
 private:
   struct Cache {
     using PriorityCache = list<BookPtr>;
-    using BookReference = pair<BookPtr, PriorityCache::iterator>;
+    struct BookReference {
+      BookPtr pointer;
+      PriorityCache::iterator iterator;
+    };
+
     using NameCache = unordered_map<string, BookReference>;
 
     explicit Cache(size_t memory_limit) : _memory_limit(memory_limit) {}
@@ -46,12 +51,12 @@ private:
     void Add(const BookPtr &book) {
       _total_memory += book->GetContent().length();
       _priority.push_back(book);
-      _name[book->GetName()] = make_pair(book, prev(_priority.end()));
+      _name[book->GetName()] = {book, prev(_priority.end())};
       Cleanup();
     }
 
     void Up(PriorityCache::iterator it) {
-      // just need to move this book to end of queue
+      // move this book to end of queue
       _priority.splice(_priority.end(), _priority, it);
     }
 
