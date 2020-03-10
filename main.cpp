@@ -20,22 +20,20 @@ struct ChunksComparer {
 struct IDomainContainer {
   virtual void Add(const string &url) = 0;
   virtual void AddMany(const vector<string> &urs) = 0;
-  virtual bool Contains(string_view url) const = 0;
+  virtual bool Contains(string url) const = 0;
   virtual vector<string> GetDomains() const = 0;
 };
 
 class SortedDomainContainer : public IDomainContainer {
- public:
+public:
   virtual void Add(const string &url) override;
   virtual void AddMany(const vector<string> &urls) override;
-  virtual bool Contains(string_view url) const override;
+  virtual bool Contains(string url) const override;
   vector<string> GetDomains() const override;
 
- private:
+private:
   void Repack();
   set<string, ChunksComparer> _storage;
-
-  // TODO migrate to string_view since all strings are in storage
   vector<string> _urls;
 };
 
@@ -74,14 +72,6 @@ bool IsSubDomain(const string &a, const string &b) {
     if (next_a == string::npos || next_b == string::npos) {
       return next_b == string::npos;
     }
-
-    // if (next_a == string::npos && next_b == string::npos) {
-    //   return true;
-    // } else if (next_a == string::npos) {
-    //   return false;
-    // } else if (next_b == string::npos) {
-    //   return true;
-    // }
   } while (true);
 }
 
@@ -99,10 +89,21 @@ void SortedDomainContainer::AddMany(const vector<string> &urls) {
 
 void SortedDomainContainer::Repack() {
   _urls.assign(_storage.begin(), _storage.end());
+  // _urls.clear();
+  // if (_storage.size() <= 1) {
+  //   _urls.assign(_storage.begin(), _storage.end());
+  // } else {
+  //   _urls.reserve(_storage.size());
+  //   size_t i = 0;
+  //   _urls[0] = *(_storage.begin());
+  //   for (auto it = next(_storage.begin()); it != _storage.end(); it++, i++) {
+  // TODO here i can compare next with previous and filter out unnecessary stuff
+  //   }
+  //   _urls.shrink_to_fit();
+  // }
 }
 
-template <class Iterator>
-struct Range {
+template <class Iterator> struct Range {
   Iterator start;
   Iterator finish;
 };
@@ -138,11 +139,11 @@ bool LessByChunks(const string &a, const string &b) {
     }
 
     if (next_a == string::npos && next_b == string::npos) {
-      return false;  // they are equal, hence not less
+      return false; // they are equal, hence not less
     } else if (next_a == string::npos) {
-      return true;  // a is shorter than b hence it is less
+      return true; // a is shorter than b hence it is less
     } else if (next_b == string::npos) {
-      return false;  // a is longer than b hence it is greater, not less
+      return false; // a is longer than b hence it is greater, not less
     }
   } while (true);
 }
@@ -159,37 +160,32 @@ bool LessOrEqualByChunks(const string &a, const string &b) {
     }
 
     if (next_a == string::npos && next_b == string::npos) {
-      return false;  // a is not less or equal than b, hence a > b
+      return false; // a is not less or equal than b, hence a > b
     } else if (next_a == string::npos) {
-      return true;  // a is shorter than b hence it is less
+      return true; // a is shorter than b hence it is less
     } else if (next_b == string::npos) {
-      return false;  // a is longer than b hence it is greater, not less
+      return false; // a is longer than b hence it is greater, not less
     }
   } while (true);
 }
 
-bool SortedDomainContainer::Contains(string_view domain) const {
-  size_t next_dot = 0;
+bool SortedDomainContainer::Contains(string domain) const {
+  size_t next_dot = -1;
   string next_sub_domain;
 
   Range<vector<string>::const_iterator> items = {_urls.begin(), _urls.end()};
-
+  string reversed = ReverseDomains(domain);
   do {
-    next_dot = domain.find('.');
+    next_dot = reversed.find('.', next_dot + 1);
     if (next_dot == string::npos) {
-      next_sub_domain = domain;
+      next_sub_domain = reversed;
     } else {
-      next_sub_domain = domain.substr(0, next_dot);
-      // domain.remove_prefix(next_dot + 1);
+      next_sub_domain = reversed.substr(0, next_dot);
     }
 
-    FindEqualRange(items, next_sub_domain);
-
-    if (items.start == items.finish) {
-      // not found
-      return false;
-    } else {
-      if (next_dot == string::npos) {
+    FindEqualRange2(items, next_sub_domain);
+    for (auto it = items.start; it != items.finish; it++) {
+      if (IsSubDomain(next_sub_domain, *it)) {
         return true;
       }
     }
@@ -355,9 +351,6 @@ void TestFindEqualDomains() {
     // => not found
   }
 
-  // TODO
-  // TODO This behavior seems ok for search
-  // TODO
   {
     // vector<string> expected{"au.list", "au.pain",      "com",
     //                         "ru",      "zh.fun.store", "zh.games"};
@@ -403,18 +396,53 @@ void TestFindEqualDomains() {
   }
 }
 
+void TestContains() {
+  SortedDomainContainer sdc;
+  vector<string> input = {"com",     "ru",           "list.au",
+                          "pain.au", "store.fun.zh", "games.zh"};
+  sdc.AddMany(input);
+
+  // Simple tests
+  ASSERT(sdc.Contains("com"));
+  ASSERT(sdc.Contains("ru"));
+  ASSERT(sdc.Contains("list.au"));
+  ASSERT(sdc.Contains("pain.au"));
+  ASSERT(sdc.Contains("store.fun.zh"));
+  ASSERT(sdc.Contains("games.zh"));
+
+  // Second level tests
+  ASSERT(sdc.Contains("foofle.com"));
+  ASSERT(sdc.Contains("yandex.ru"));
+  ASSERT(sdc.Contains("mail.list.au"));
+  ASSERT(sdc.Contains("fun.pain.au"));
+  ASSERT(sdc.Contains("wow.store.fun.zh"));
+  ASSERT(sdc.Contains("xxx.games.zh"));
+
+  ASSERT(!sdc.Contains("foofle.co"));
+  ASSERT(!sdc.Contains("yandex.su"));
+  ASSERT(!sdc.Contains("mail.lint.au"));
+  ASSERT(!sdc.Contains("fun.pane.au"));
+  ASSERT(!sdc.Contains("wow.whore.fun.zh"));
+  ASSERT(!sdc.Contains("xxx.gamse.zh"));
+
+  ASSERT(sdc.Contains("top.foofle.com"));
+  ASSERT(sdc.Contains("a.ru"));
+  ASSERT(!sdc.Contains("au"));
+  ASSERT(!sdc.Contains("pan.au"));
+  ASSERT(!sdc.Contains("zh"));
+}
+
 void RunAllTests() {
   TestRunner tr;
-  // RUN_TEST(tr, TestStringComparison);
   RUN_TEST(tr, TestRevertDomain);
   RUN_TEST(tr, TestLessByChunksIsValidComp);
   RUN_TEST(tr, TestPrefixSort);
   RUN_TEST(tr, TestIsSubDomain);
   RUN_TEST(tr, TestAddSomeDomains);
   RUN_TEST(tr, TestFindEqualDomains);
+  RUN_TEST(tr, TestContains);
 }
 
-int main() { RunAllTests(); }
 // bool IsSubdomain(string_view subdomain, string_view domain) {
 //   auto i = subdomain.size() - 1;
 //   auto j = domain.size() - 1;
@@ -426,46 +454,33 @@ int main() { RunAllTests(); }
 //   return (i < 0 && domain[j] == '.') || (j < 0 && subdomain[i] == '.');
 // }
 
-// vector<string> ReadDomains() {
-//   size_t count;
-//   cin >> count;
+vector<string> ReadDomains() {
+  size_t count;
+  cin >> count;
 
-//   vector<string> domains;
-//   for (size_t i = 0; i < count; ++i) {
-//     string domain;
-//     getline(cin, domain);
-//     domains.push_back(domain);
-//   }
-//   return domains;
-// }
+  vector<string> domains(count);
+  string domain;
+  for (size_t i = 0; i < count; ++i) {
+    cin >> domain;
+    domains[i] = domain;
+  }
+  return domains;
+}
 
-// int main() {
-//   const vector<string> banned_domains = ReadDomains();
-//   const vector<string> domains_to_check = ReadDomains();
+int main() {
+  // RunAllTests();
+  const vector<string> banned_domains = ReadDomains();
+  const vector<string> domains_to_check = ReadDomains();
 
-//   for (string_view domain : banned_domains) {
-//     reverse(begin(domain), end(domain));
-//   }
-//   sort(begin(banned_domains), end(banned_domains));
+  SortedDomainContainer sdc;
+  sdc.AddMany(banned_domains);
 
-//   size_t insert_pos = 0;
-//   for (string &domain : banned_domains) {
-//     if (insert_pos == 0 ||
-//         !IsSubdomain(domain, banned_domains[insert_pos - 1])) {
-//       swap(banned_domains[insert_pos++], domain);
-//     }
-//   }
-//   banned_domains.resize(insert_pos);
-
-//   for (const string_view domain : domains_to_check) {
-//     if (const auto it =
-//             upper_bound(begin(banned_domains), end(banned_domains),
-//             domain);
-//         it != begin(banned_domains) && IsSubdomain(domain, *prev(it))) {
-//       cout << "Good" << endl;
-//     } else {
-//       cout << "Bad" << endl;
-//     }
-//   }
-//   return 0;
-// }
+  for (const string &domain : domains_to_check) {
+    if (sdc.Contains(domain)) {
+      cout << "Bad " << endl;
+    } else {
+      cout << "Good" << endl;
+    }
+  }
+  return 0;
+}
