@@ -23,6 +23,8 @@ struct Month {
     return *this;
   }
 
+  Month NextMonth() const { return Month((_month + 1) % 12); }
+
 private:
   int _month;
 };
@@ -149,10 +151,8 @@ struct Date {
         year = next_year;
         if (last_year.IsLeap()) {
           *this = Next();
-          //*this = Prev();
         } else {
           *this = Prev();
-          //   *this = Next();
         }
       }
     }
@@ -230,17 +230,66 @@ bool operator<(const Date &d1, const Date &d2) {
          make_tuple(d2.year, d2.month, d2.day);
 }
 
+bool operator>(const Date &d1, const Date &d2) {
+  return make_tuple(d1.year, d1.month, d1.day) >
+         make_tuple(d2.year, d2.month, d2.day);
+}
+
 ostream &operator<<(ostream &os, const Date &date) {
   return os << setfill('0') << setw(4) << date.year << '-' << setw(2)
             << date.month << '-' << setw(2) << date.day;
 }
 
-int operator-(const Date &d1, const Date &d2) {
-  const Date &min = d1 < d2 ? d1 : d2;
-  const Date &max = d1 < d2 ? d2 : d1;
-
-  for (Year y = min.year; y < max.year; y++) {
+// d1 < d2
+int YearlyDiff(const Date &d1, const Date &d2) {
+  int year_days = 0;
+  for (Year y = d1.year; y != d2.year; y++) {
+    year_days += y.DaysInYear();
   }
+  return year_days;
+}
+
+// d1 < d2
+int MonthlyDiff(const Year year, const Date &d1, const Date &d2) {
+  int month_days = 0;
+  for (Month m = d1.month; m != d2.month; m = m.NextMonth()) {
+    month_days += year.DaysInMonth(m);
+  }
+  return month_days;
+}
+
+// d1 < d2
+int DailyDiff(const Date &d1, const Date &d2) { return d2.day - d1.day; }
+
+// d1 is expected to be less than d2
+int operator-(Date d1, Date d2) {
+  int res = 0;
+
+  if (d1 > d2) {
+    res -= YearlyDiff(d2, d1);
+    d2.year = d1.year;
+  } else {
+    res += YearlyDiff(d1, d2);
+    d1.year = d2.year;
+  }
+
+  auto year = d1.year;
+
+  if (d1 > d2) {
+    res -= MonthlyDiff(year, d2, d1);
+    d2.month = d1.month;
+  } else {
+    res += MonthlyDiff(year, d1, d2);
+    d1.month = d2.month;
+  }
+
+  if (d1 > d2) {
+    res -= DailyDiff(d2, d1);
+  } else {
+    res += DailyDiff(d1, d2);
+  }
+
+  return res;
 }
 
 struct Commands {
@@ -361,7 +410,7 @@ bool operator!=(DateRangeIterator &d1, DateRangeIterator &d2) {
 class DateRange {
 public:
   DateRange(Date from, Date to) : _from(from), _to(to) {}
-  int days() const { return _to - _from; }
+  int Days() const { return _to - _from; }
   DateRangeIterator begin() const;
   DateRangeIterator end() const;
 
@@ -373,7 +422,7 @@ class CommandProcessor {
 public:
   optional<string> ProcessCommand(const EarnCommand &earn) {
     auto range = DateRange(earn.from, earn.to);
-    double days = range.days();
+    double days = range.Days();
     for (const auto &d : range) {
       _earnings[d] += earn.value / days;
     }
@@ -607,6 +656,18 @@ void TestDateAdditionDays() {
     d.AddDays(366);
     ASSERT_EQUAL(d, Date(Year(2001), Month(4), Day(2)))
   }
+
+  // Couple more
+  {
+    Date d(Year(2019), Month(8), Day(1));
+    d.AddDays(113);
+    ASSERT_EQUAL(d, Date(Year(2019), Month(11), Day(22)))
+  }
+  {
+    Date d(Year(2019), Month(8), Day(1));
+    d.AddDays(219);
+    ASSERT_EQUAL(d, Date(Year(2020), Month(3), Day(7)))
+  }
 }
 
 void TestReadCommands() {
@@ -636,7 +697,7 @@ void TestDateRange() {
   Date start{Year(2000), Month(1), Day(1)};
   Date finish{Year(2000), Month(1), Day(31)};
   DateRange range{start, finish};
-  ASSERT_EQUAL(range.days(), 31);
+  ASSERT_EQUAL(range.Days(), 31);
 }
 
 void RunAllTests() {
