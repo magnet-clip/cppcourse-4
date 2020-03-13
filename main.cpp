@@ -9,9 +9,45 @@
 
 using namespace std;
 
+// Months start from 1
+struct Month {
+  explicit Month(int month) : _month(month) {
+    if (month <= 0)
+      throw invalid_argument("month is <= 0");
+    if (month > 12)
+      throw invalid_argument("month is > 12");
+  }
+  operator int() const { return _month; }
+  Month &operator=(const Month &other) {
+    _month = other._month;
+    return *this;
+  }
+
+private:
+  int _month;
+};
+
+// Days start from 1
+struct Day {
+  explicit Day(int day) : _day(day) {
+    if (day <= 0)
+      throw invalid_argument("day is <= 0");
+  }
+  operator int() const { return _day; }
+  Day &operator=(const Day &other) {
+    _day = other._day;
+    return *this;
+  }
+
+private:
+  int _day;
+};
+
 struct Year {
   explicit Year(int year) : _year(year) {}
+
   operator int() const { return _year; }
+
   Year &operator=(const Year &other) {
     _year = other._year;
     return *this;
@@ -30,48 +66,38 @@ struct Year {
     return false;
   }
 
+  int DaysInYear() const { return IsLeap() ? 366 : 365; }
+
+  int DaysInMonth(const Month &month) const {
+    return MonthLengths[month - 1] + ((month == 2 && IsLeap()) ? 1 : 0);
+  }
+
+  Year &operator++() {
+    _year++;
+    return *this;
+  }
+
+  Year operator++(int) {
+    Year temp = *this;
+    _year++;
+    return temp;
+  }
+
+  Year Next() { return Year(_year + 1); }
+
 private:
+  static const array<int, 12> MonthLengths;
   int _year;
 };
 
-// Months are started from 1
-struct Month {
-  explicit Month(int month) : _month(month) {
-    if (month <= 0)
-      throw invalid_argument("month is <= 0");
-    if (month > 12)
-      throw invalid_argument("month is > 12");
-  }
-  operator int() const { return _month; }
-  Month &operator=(const Month &other) {
-    _month = other._month;
-    return *this;
-  }
-
-private:
-  int _month;
-};
-
-// Days are started from 1
-struct Day {
-  explicit Day(int day) : _day(day) {
-    if (day <= 0)
-      throw invalid_argument("day is <= 0");
-  }
-  operator int() const { return _day; }
-  Day &operator=(const Day &other) {
-    _day = other._day;
-    return *this;
-  }
-
-private:
-  int _day;
-};
-
+const array<int, 12> Year::MonthLengths = {31, 28, 31, 30, 31, 30,
+                                           31, 31, 30, 31, 30, 31};
 struct Date {
-  static const array<int, 12> MonthLengths;
-
-  Date() : year(Year(0)), month(Month(1)), day(Day(1)) {}
+  Date() : year(Year(0)), month(Month(1)), day(Day(1)) {
+    if (day > year.DaysInMonth(month)) {
+      throw invalid_argument("day too large");
+    }
+  }
 
   Date(Year new_year, Month new_month, Day new_day)
       : year(new_year), month(new_month), day(new_day) {}
@@ -97,19 +123,64 @@ struct Date {
     return temp;
   }
 
+  void AddYears(int add_years) { year = Year(year + add_years); }
+
+  void AddMonths(int add_months) {
+    int add_years = add_months / 12;
+    add_months = add_months % 12;
+    if (month + add_months > 12) {
+      AddYears(add_years + 1);
+      month = Month((month + add_months) % 12);
+    } else {
+      AddYears(add_years);
+      month = Month(month + add_months);
+    }
+  }
+
+  void AddDays(int add_days) {
+    // Adding years
+    while (add_days >= year.DaysInYear()) {
+      add_days -= year.DaysInYear();
+      auto next_year = year.Next();
+      if ((year.IsLeap() == next_year.IsLeap()) || (month <= 2)) {
+        year = next_year;
+      } else {
+        auto last_year = year;
+        year = next_year;
+        if (last_year.IsLeap()) {
+          *this = Next();
+          //*this = Prev();
+        } else {
+          *this = Prev();
+          //   *this = Next();
+        }
+      }
+    }
+
+    // Adding months and days
+    auto days_till_end = year.DaysInMonth(month) - day;
+    while (add_days > days_till_end) {
+      day = Day(1);
+      AddMonths(1);
+      add_days -= (days_till_end + 1);
+      days_till_end = year.DaysInMonth(month) - day;
+    }
+
+    day = Day(day + add_days);
+  }
+
   Year year;
   Month month;
   Day day;
 
 private:
   Date Next() {
-    int month_pos = month - 1;
-    int days_in_current_month =
-        MonthLengths[month_pos] + ((month == 2 && year.IsLeap()) ? 1 : 0);
     int new_day = day + 1;
     int new_month = month;
     int new_year = year;
-    if (new_day > days_in_current_month) {
+    if (new_day > year.DaysInMonth(month)) {
+      // i will not consider situation when day was 45 and that
+      // should have been treated as 15th of next month. yet.
       new_day = 1;
       new_month += 1;
       if (new_month > 12) {
@@ -119,10 +190,24 @@ private:
     }
     return Date(Year(new_year), Month(new_month), Day(new_day));
   }
-};
 
-const array<int, 12> Date::MonthLengths = {31, 28, 31, 30, 31, 30,
-                                           31, 31, 30, 31, 30, 31};
+  Date Prev() {
+    int new_day = day - 1;
+    int new_month = month;
+    int new_year = year;
+    if (new_day < 1) {
+      // i will not consider situation when day was 45 and that
+      // should have been treated as 15th of next month. yet.
+      new_month -= 1;
+      if (new_month < 1) {
+        new_month = 12;
+        new_year -= 1;
+      }
+      new_day = year.DaysInMonth(Month(new_month));
+    }
+    return Date(Year(new_year), Month(new_month), Day(new_day));
+  }
+};
 
 istream &operator>>(istream &is, Date &date) {
   int year = 0, month = 0, day = 0;
@@ -148,6 +233,14 @@ bool operator<(const Date &d1, const Date &d2) {
 ostream &operator<<(ostream &os, const Date &date) {
   return os << setfill('0') << setw(4) << date.year << '-' << setw(2)
             << date.month << '-' << setw(2) << date.day;
+}
+
+int operator-(const Date &d1, const Date &d2) {
+  const Date &min = d1 < d2 ? d1 : d2;
+  const Date &max = d1 < d2 ? d2 : d1;
+
+  for (Year y = min.year; y < max.year; y++) {
+  }
 }
 
 struct Commands {
@@ -260,13 +353,15 @@ private:
 bool operator==(DateRangeIterator &d1, DateRangeIterator &d2) {
   return d1 == d2;
 }
+
 bool operator!=(DateRangeIterator &d1, DateRangeIterator &d2) {
   return d1 != d2;
 }
+
 class DateRange {
 public:
   DateRange(Date from, Date to) : _from(from), _to(to) {}
-  int days() const;
+  int days() const { return _to - _from; }
   DateRangeIterator begin() const;
   DateRangeIterator end() const;
 
@@ -321,6 +416,9 @@ void TestDates() {
     s >> d;
     ASSERT_EQUAL(d, Date(Year(3), Month(1), Day(2)));
   }
+}
+
+void TestDateInc() {
   {
     Date d;
     d++;
@@ -356,6 +454,159 @@ void TestDates() {
     d++;
     ASSERT_EQUAL(d, Date(Year(2004), Month(2), Day(29)));
   }
+  {
+    // Test for a case when day is out of months bounds. If i change it, this
+    // test will fail
+    Date d(Year(2011), Month(4), Day(100));
+    d++;
+    ASSERT_EQUAL(d, Date(Year(2011), Month(5), Day(1)));
+  }
+}
+
+void TestDateAdditionDays() {
+  {
+    Date d(Year(1998), Month(5), Day(1));
+    d.AddDays(31);
+    ASSERT_EQUAL(d, Date(Year(1998), Month(6), Day(1)))
+  }
+  {
+    Date d(Year(1998), Month(5), Day(31));
+    d.AddDays(31);
+    ASSERT_EQUAL(d, Date(Year(1998), Month(7), Day(1)))
+  }
+  {
+    Date d(Year(1998), Month(6), Day(1));
+    d.AddDays(30);
+    ASSERT_EQUAL(d, Date(Year(1998), Month(7), Day(1)))
+  }
+  {
+    Date d(Year(1998), Month(6), Day(30));
+    d.AddDays(30);
+    ASSERT_EQUAL(d, Date(Year(1998), Month(7), Day(30)))
+  }
+  // 1998 -> 1999 ; No leap -> No leap
+  {
+    Date d(Year(1998), Month(1), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(1999), Month(1), Day(1)))
+  }
+  {
+    Date d(Year(1998), Month(1), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(1999), Month(1), Day(2)))
+  }
+  {
+    Date d(Year(1998), Month(2), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(1999), Month(2), Day(1)))
+  }
+  {
+    Date d(Year(1998), Month(2), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(1999), Month(2), Day(2)))
+  }
+  {
+    Date d(Year(1998), Month(3), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(1999), Month(3), Day(1)))
+  }
+  {
+    Date d(Year(1998), Month(2), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(1999), Month(2), Day(2)))
+  }
+  {
+    Date d(Year(1998), Month(4), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(1999), Month(4), Day(1)))
+  }
+  {
+    Date d(Year(1998), Month(4), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(1999), Month(4), Day(2)))
+  }
+  // 1999 -> 2000 ; No leap -> leap
+  {
+    Date d(Year(1999), Month(1), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(2000), Month(1), Day(1)))
+  }
+  {
+    Date d(Year(1999), Month(1), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(2000), Month(1), Day(2)))
+  }
+  {
+    Date d(Year(1999), Month(2), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(2000), Month(2), Day(1)))
+  }
+  {
+    Date d(Year(1999), Month(2), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(2000), Month(2), Day(2)))
+  }
+  {
+    Date d(Year(1999), Month(3), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(2000), Month(2), Day(29)))
+  }
+  {
+    Date d(Year(1999), Month(3), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(2000), Month(3), Day(1)))
+  }
+  {
+    Date d(Year(1999), Month(4), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(2000), Month(3), Day(31)))
+  }
+  {
+    Date d(Year(1999), Month(4), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(2000), Month(4), Day(1)))
+  }
+  // 2000 -> 2001 ; Leap -> No leap
+  {
+    Date d(Year(2000), Month(1), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(2000), Month(12), Day(31)))
+  }
+  {
+    Date d(Year(2000), Month(1), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(2001), Month(1), Day(1)))
+  }
+  {
+    Date d(Year(2000), Month(2), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(2001), Month(1), Day(31)))
+  }
+  {
+    Date d(Year(2000), Month(2), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(2001), Month(2), Day(1)))
+  }
+  {
+    Date d(Year(2000), Month(3), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(2001), Month(3), Day(1)))
+  }
+  {
+    Date d(Year(2000), Month(3), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(2001), Month(3), Day(2)))
+  }
+  {
+    Date d(Year(2000), Month(4), Day(1));
+    d.AddDays(365);
+    ASSERT_EQUAL(d, Date(Year(2001), Month(4), Day(1)))
+  }
+  {
+    Date d(Year(2000), Month(4), Day(1));
+    d.AddDays(366);
+    ASSERT_EQUAL(d, Date(Year(2001), Month(4), Day(2)))
+  }
 }
 
 void TestReadCommands() {
@@ -372,20 +623,27 @@ void TestReadCommands() {
                                  Date(Year(2001), Month(1), Day(1))};
     PayTaxCommand payTax{Date(Year(2000), Month(1), Day(2)),
                          Date(Year(2000), Month(1), Day(3))};
-    ASSERT_EQUAL(*commands[0].get(), earn);
     ASSERT_EQUAL(commands[0]->Kind(), Commands::EarnCommand);
-    ASSERT_EQUAL(*commands[1].get(), compute);
+    ASSERT_EQUAL(*commands[0].get(), earn);
     ASSERT_EQUAL(commands[1]->Kind(), Commands::ComputeIncomeCommand);
-    ASSERT_EQUAL(*commands[2].get(), payTax);
+    ASSERT_EQUAL(*commands[1].get(), compute);
     ASSERT_EQUAL(commands[2]->Kind(), Commands::PayTaxCommand);
+    ASSERT_EQUAL(*commands[2].get(), payTax);
   }
 }
 
-void TestDateRange() {}
+void TestDateRange() {
+  Date start{Year(2000), Month(1), Day(1)};
+  Date finish{Year(2000), Month(1), Day(31)};
+  DateRange range{start, finish};
+  ASSERT_EQUAL(range.days(), 31);
+}
 
 void RunAllTests() {
   TestRunner tr;
   RUN_TEST(tr, TestDates);
+  RUN_TEST(tr, TestDateInc);
+  RUN_TEST(tr, TestDateAdditionDays);
   RUN_TEST(tr, TestReadCommands);
   RUN_TEST(tr, TestDateRange);
 }
