@@ -201,8 +201,9 @@ struct Date {
       since++;
     }
     if (since < till) {
-      // TODO: try [count += (till-since)/4] (dates must be in 2000-2099 range).
-      // BTW I can simplify IsLeap() check
+      // count += (till - since) / 4;
+      // TODO: try [count += (till-since)/4] (dates must be in
+      // 2000-2099 range). BTW I can simplify IsLeap() check
       do {
         since += 4;
         if (since.IsLeap()) {
@@ -263,6 +264,8 @@ struct Date {
   }
 };
 
+static const Date LAST_EPOCH_DATE = Date(Year(2099), Month(12), Day(31));
+
 istream &operator>>(istream &is, Date &date) {
   int year = 0, month = 0, day = 0;
   is >> year;
@@ -272,6 +275,14 @@ istream &operator>>(istream &is, Date &date) {
   is >> day;
   date = Date(Year(year), Month(month), Day(day));
   return is;
+}
+
+bool operator==(const Date &d, const int days) {
+  return d.GetEpochDays() == days;
+}
+
+bool operator!=(const Date &d, const int days) {
+  return d.GetEpochDays() != days;
 }
 
 bool operator==(const Date &d1, const Date &d2) {
@@ -414,15 +425,15 @@ vector<shared_ptr<Command>> ReadCommands(istream &is = cin) {
 
 class DateRangeIterator {
  public:
-  explicit DateRangeIterator(Date date) : _date(date) {}
+  explicit DateRangeIterator(int epoch_days) : _epoch_days(epoch_days) {}
   DateRangeIterator &operator++() {
-    _date++;
+    _epoch_days++;
     return *this;
   }
-  Date &operator*() { return _date; }
+  int &operator*() { return _epoch_days; }
 
  private:
-  Date _date;
+  int _epoch_days;
 };
 
 bool operator==(DateRangeIterator &d1, DateRangeIterator &d2) {
@@ -437,8 +448,12 @@ class DateRange {
  public:
   DateRange(Date from, Date to) : _from(from), _to(to) {}
   int Days() const { return _to - _from; }
-  DateRangeIterator begin() const { return DateRangeIterator(_from); }
-  DateRangeIterator end() const { return DateRangeIterator(_to.Next()); }
+  DateRangeIterator begin() const {
+    return DateRangeIterator(_from.GetEpochDays());
+  }
+  DateRangeIterator end() const {
+    return DateRangeIterator(_to.Next().GetEpochDays());
+  }
 
  private:
   Date _from, _to;
@@ -446,6 +461,10 @@ class DateRange {
 
 class CommandProcessor {
  public:
+  CommandProcessor()
+      : _earnings(LAST_EPOCH_DATE.GetEpochDays(), 0),
+        _spendings(LAST_EPOCH_DATE.GetEpochDays(), 0) {}
+
   void Earn(const EarnCommand &earn) {
     auto range = DateRange(earn.from, earn.to);
     double days = range.Days() + 1;
@@ -478,11 +497,11 @@ class CommandProcessor {
     }
   }
 
-  const map<Date, double> &GetEarnings() const { return _earnings; }
+  const vector<double> &GetEarnings() const { return _earnings; }
 
  private:
-  map<Date, double> _earnings;
-  map<Date, double> _spendings;
+  vector<double> _earnings;
+  vector<double> _spendings;
 };
 
 vector<string> ProcessCommands(vector<shared_ptr<Command>> commands) {
@@ -646,7 +665,7 @@ void TestDateRange() {
     auto curr = start;
     for (auto d : range) {
       num++;
-      ASSERT_EQUAL(d, curr);
+      ASSERT_EQUAL(d, curr.GetEpochDays());
       curr.AddDays(1);
     }
     ASSERT_EQUAL(curr, finish.Next());
@@ -660,7 +679,7 @@ void TestDateRange() {
     auto curr = start;
     for (auto d : range) {
       num++;
-      ASSERT_EQUAL(d, curr);
+      ASSERT_EQUAL(d, curr.GetEpochDays());
       curr.AddDays(1);
     }
     ASSERT_EQUAL(curr, finish.Next());
@@ -677,7 +696,7 @@ void TestEarnCommand() {
     processor.Earn(command);
     auto &earnings = processor.GetEarnings();
     for (int i = 1; i <= days; i++) {
-      ASSERT_EQUAL(earnings.at(Date(Year(2000), Month(1), Day(i))),
+      ASSERT_EQUAL(earnings[Date(Year(2000), Month(1), Day(i)).GetEpochDays()],
                    static_cast<double>(count) / days);
     }
   }
@@ -734,12 +753,12 @@ void RunAllTests() {
 }
 
 int main() {
-  RunAllTests();
-  LoadTest();
-  // auto commands = ReadCommands();
-  // auto output = ProcessCommands(commands);
-  // for (auto &o : output) {
-  //   cout << o << endl;
-  // }
-  // return 0;
+  // RunAllTests();
+  // LoadTest();
+  auto commands = ReadCommands();
+  auto output = ProcessCommands(commands);
+  for (auto &o : output) {
+    cout << o << endl;
+  }
+  return 0;
 }
