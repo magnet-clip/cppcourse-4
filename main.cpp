@@ -12,10 +12,8 @@ using namespace std;
 // Months start from 1
 struct Month {
   explicit Month(int month) : _month(month) {
-    if (month <= 0)
-      throw invalid_argument("month is <= 0");
-    if (month > 12)
-      throw invalid_argument("month is > 12");
+    if (month <= 0) throw invalid_argument("month is <= 0");
+    if (month > 12) throw invalid_argument("month is > 12");
   }
   operator int() const { return _month; }
   Month &operator=(const Month &other) {
@@ -23,17 +21,22 @@ struct Month {
     return *this;
   }
 
-  Month NextMonth() const { return Month((_month + 1) % 12); }
+  Month NextMonth() const {
+    if (_month < 12) {
+      return Month(_month + 1);
+    } else {
+      return Month(1);
+    }
+  }
 
-private:
+ private:
   int _month;
 };
 
 // Days start from 1
 struct Day {
   explicit Day(int day) : _day(day) {
-    if (day <= 0)
-      throw invalid_argument("day is <= 0");
+    if (day <= 0) throw invalid_argument("day is <= 0");
   }
   operator int() const { return _day; }
   Day &operator=(const Day &other) {
@@ -41,7 +44,7 @@ struct Day {
     return *this;
   }
 
-private:
+ private:
   int _day;
 };
 
@@ -87,7 +90,7 @@ struct Year {
 
   Year Next() { return Year(_year + 1); }
 
-private:
+ private:
   static const array<int, 12> MonthLengths;
   int _year;
 };
@@ -173,7 +176,7 @@ struct Date {
   Month month;
   Day day;
 
-private:
+ private:
   Date Next() {
     int new_day = day + 1;
     int new_month = month;
@@ -243,8 +246,19 @@ ostream &operator<<(ostream &os, const Date &date) {
 // d1 < d2
 int YearlyDiff(const Date &d1, const Date &d2) {
   int year_days = 0;
-  for (Year y = d1.year; y != d2.year; y++) {
-    year_days += y.DaysInYear();
+  for (Year year = d1.year; year != d2.year; year++) {
+    year_days += year.DaysInYear();
+    auto next_year = year.Next();
+    // TODO: this is same logic as in Date::AddDays, but AddDays is less
+    // structured. Could it be taken out?
+    if ((year.IsLeap() == next_year.IsLeap()) || (d1.month <= 2)) {
+    } else {
+      if (year.IsLeap()) {
+        year_days -= 1;
+      } else {
+        year_days += 1;
+      }
+    }
   }
   return year_days;
 }
@@ -261,32 +275,32 @@ int MonthlyDiff(const Year year, const Date &d1, const Date &d2) {
 // d1 < d2
 int DailyDiff(const Date &d1, const Date &d2) { return d2.day - d1.day; }
 
-// d1 is expected to be less than d2
+// d1 is expected to be greater than d2
 int operator-(Date d1, Date d2) {
   int res = 0;
 
-  if (d1 > d2) {
-    res -= YearlyDiff(d2, d1);
-    d2.year = d1.year;
-  } else {
-    res += YearlyDiff(d1, d2);
+  if (d1 < d2) {
+    res -= YearlyDiff(d1, d2);
     d1.year = d2.year;
+  } else {
+    res += YearlyDiff(d2, d1);
+    d2.year = d1.year;
   }
 
   auto year = d1.year;
 
-  if (d1 > d2) {
-    res -= MonthlyDiff(year, d2, d1);
-    d2.month = d1.month;
-  } else {
-    res += MonthlyDiff(year, d1, d2);
+  if (d1 < d2) {
+    res -= MonthlyDiff(year, d1, d2);
     d1.month = d2.month;
+  } else {
+    res += MonthlyDiff(year, d2, d1);
+    d2.month = d1.month;
   }
 
-  if (d1 > d2) {
-    res -= DailyDiff(d2, d1);
+  if (d1 < d2) {
+    res -= DailyDiff(d1, d2);
   } else {
-    res += DailyDiff(d1, d2);
+    res += DailyDiff(d2, d1);
   }
 
   return res;
@@ -387,7 +401,7 @@ vector<shared_ptr<Command>> ReadCommands(istream &is = cin) {
 }
 
 class DateRangeIterator {
-public:
+ public:
   explicit DateRangeIterator(Date &date) : _date(date) {}
   DateRangeIterator &operator++() {
     _date++;
@@ -395,7 +409,7 @@ public:
   }
   Date &operator*() { return _date; }
 
-private:
+ private:
   Date _date;
 };
 
@@ -408,18 +422,18 @@ bool operator!=(DateRangeIterator &d1, DateRangeIterator &d2) {
 }
 
 class DateRange {
-public:
+ public:
   DateRange(Date from, Date to) : _from(from), _to(to) {}
   int Days() const { return _to - _from; }
   DateRangeIterator begin() const;
   DateRangeIterator end() const;
 
-private:
+ private:
   Date _from, _to;
 };
 
 class CommandProcessor {
-public:
+ public:
   optional<string> ProcessCommand(const EarnCommand &earn) {
     auto range = DateRange(earn.from, earn.to);
     double days = range.Days();
@@ -435,7 +449,7 @@ public:
     return nullopt;
   }
 
-private:
+ private:
   map<Date, double> _earnings;
 };
 
@@ -693,12 +707,45 @@ void TestReadCommands() {
   }
 }
 
-void TestDateRange() {
-  Date start{Year(2000), Month(1), Day(1)};
-  Date finish{Year(2000), Month(1), Day(31)};
-  DateRange range{start, finish};
-  ASSERT_EQUAL(range.Days(), 31);
+#define TEST_SUB_DAYS(str)              \
+  {                                     \
+    istringstream input(str);           \
+    Date start, fin365, fin366;         \
+    input >> start >> fin365 >> fin366; \
+    ASSERT_EQUAL(fin365 - start, 365);  \
+    ASSERT_EQUAL(fin366 - start, 366);  \
+    ASSERT_EQUAL(start - fin365, -365); \
+    ASSERT_EQUAL(start - fin366, -366); \
+  }
+
+void TestSubDays() {
+  {
+    Date start{Year(2000), Month(1), Day(1)};
+    Date finish{Year(2000), Month(1), Day(31)};
+    DateRange range{start, finish};
+    ASSERT_EQUAL(range.Days(), 30);
+  }
+  {
+    Date start{Year(2000), Month(1), Day(1)};
+    Date finish{Year(2000), Month(1), Day(31)};
+    DateRange range{finish, start};
+    ASSERT_EQUAL(range.Days(), -30);
+  }
+  TEST_SUB_DAYS("1998-01-01	1999-01-01 1999-01-02");
+  TEST_SUB_DAYS("1998-02-01	1999-02-01 1999-02-02");
+  TEST_SUB_DAYS("1998-03-01	1999-03-01 1999-03-02");
+  TEST_SUB_DAYS("1998-04-01	1999-04-01 1999-04-02");
+  TEST_SUB_DAYS("1999-01-01	2000-01-01 2000-01-02");
+  TEST_SUB_DAYS("1999-02-01	2000-02-01 2000-02-02");
+  TEST_SUB_DAYS("1999-03-01	2000-02-29 2000-03-01");
+  TEST_SUB_DAYS("1999-04-01	2000-03-31 2000-04-01");
+  TEST_SUB_DAYS("2000-01-01	2000-12-31 2001-01-01");
+  TEST_SUB_DAYS("2000-02-01	2001-01-31 2001-02-01");
+  TEST_SUB_DAYS("2000-03-01	2001-03-01 2001-03-02");
+  TEST_SUB_DAYS("2000-04-01	2001-04-01 2001-04-02");
 }
+
+void TestDateRange() {}
 
 void RunAllTests() {
   TestRunner tr;
@@ -706,6 +753,7 @@ void RunAllTests() {
   RUN_TEST(tr, TestDateInc);
   RUN_TEST(tr, TestDateAdditionDays);
   RUN_TEST(tr, TestReadCommands);
+  RUN_TEST(tr, TestSubDays);
   RUN_TEST(tr, TestDateRange);
 }
 
