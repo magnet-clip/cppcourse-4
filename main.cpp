@@ -50,6 +50,7 @@ struct Day {
 
 struct Year {
   explicit Year(int year) : _year(year) {}
+  Year(const Year &other) : _year(other._year) {}
 
   operator int() const { return _year; }
 
@@ -172,12 +173,7 @@ struct Date {
     day = Day(day + add_days);
   }
 
-  Year year;
-  Month month;
-  Day day;
-
- private:
-  Date Next() {
+  Date Next() const {
     int new_day = day + 1;
     int new_month = month;
     int new_year = year;
@@ -194,7 +190,7 @@ struct Date {
     return Date(Year(new_year), Month(new_month), Day(new_day));
   }
 
-  Date Prev() {
+  Date Prev() const {
     int new_day = day - 1;
     int new_month = month;
     int new_year = year;
@@ -210,6 +206,10 @@ struct Date {
     }
     return Date(Year(new_year), Month(new_month), Day(new_day));
   }
+
+  Year year;
+  Month month;
+  Day day;
 };
 
 istream &operator>>(istream &is, Date &date) {
@@ -225,6 +225,11 @@ istream &operator>>(istream &is, Date &date) {
 
 bool operator==(const Date &d1, const Date &d2) {
   return make_tuple(d1.year, d1.month, d1.day) ==
+         make_tuple(d2.year, d2.month, d2.day);
+}
+
+bool operator!=(const Date &d1, const Date &d2) {
+  return make_tuple(d1.year, d1.month, d1.day) !=
          make_tuple(d2.year, d2.month, d2.day);
 }
 
@@ -402,7 +407,7 @@ vector<shared_ptr<Command>> ReadCommands(istream &is = cin) {
 
 class DateRangeIterator {
  public:
-  explicit DateRangeIterator(Date &date) : _date(date) {}
+  explicit DateRangeIterator(Date date) : _date(date) {}
   DateRangeIterator &operator++() {
     _date++;
     return *this;
@@ -414,19 +419,19 @@ class DateRangeIterator {
 };
 
 bool operator==(DateRangeIterator &d1, DateRangeIterator &d2) {
-  return d1 == d2;
+  return *d1 == *d2;
 }
 
 bool operator!=(DateRangeIterator &d1, DateRangeIterator &d2) {
-  return d1 != d2;
+  return *d1 != *d2;
 }
 
 class DateRange {
  public:
   DateRange(Date from, Date to) : _from(from), _to(to) {}
   int Days() const { return _to - _from; }
-  DateRangeIterator begin() const;
-  DateRangeIterator end() const;
+  DateRangeIterator begin() const { return DateRangeIterator(_from); }
+  DateRangeIterator end() const { return DateRangeIterator(_to.Next()); }
 
  private:
   Date _from, _to;
@@ -434,20 +439,31 @@ class DateRange {
 
 class CommandProcessor {
  public:
-  optional<string> ProcessCommand(const EarnCommand &earn) {
+  void Earn(const EarnCommand &earn) {
     auto range = DateRange(earn.from, earn.to);
-    double days = range.Days();
+    double days = range.Days() + 1;
     for (const auto &d : range) {
       _earnings[d] += earn.value / days;
     }
-    return nullopt;
   }
-  optional<string> ProcessCommand(const ComputeIncomeCommand &compute) {
-    return nullopt;
+  string ComputeIncome(const ComputeIncomeCommand &compute) {
+    auto range = DateRange(compute.from, compute.to);
+    double days = range.Days() + 1;
+    double sum = 0;
+    for (const auto &d : range) {
+      sum += _earnings[d];
+    }
+    return to_string(sum);
   }
-  optional<string> ProcessCommand(const PayTaxCommand &compute) {
-    return nullopt;
+  void PayTax(const PayTaxCommand &pay) {
+    auto range = DateRange(pay.from, pay.to);
+    double days = range.Days() + 1;
+    for (const auto &d : range) {
+      _earnings[d] *= 0.87;
+    }
   }
+
+  const map<Date, double> &GetEarnings() const { return _earnings; }
 
  private:
   map<Date, double> _earnings;
@@ -455,6 +471,21 @@ class CommandProcessor {
 
 vector<string> ProcessCommands(vector<shared_ptr<Command>> commands) {
   CommandProcessor processor;
+  vector<string> answers;
+  for (auto &command : commands) {
+    if (command->Kind() == Commands::ComputeIncomeCommand) {
+      auto compute = static_cast<ComputeIncomeCommand &>(*command);
+      auto amount = processor.ComputeIncome(compute);
+      answers.push_back(amount);
+    } else if (command->Kind() == Commands::EarnCommand) {
+      auto earn = static_cast<EarnCommand &>(*command);
+      processor.Earn(earn);
+    } else if (command->Kind() == Commands::PayTaxCommand) {
+      auto pay = static_cast<PayTaxCommand &>(*command);
+      processor.PayTax(pay);
+    }
+  }
+  return answers;
 }
 
 void TestDates() {
@@ -745,7 +776,69 @@ void TestSubDays() {
   TEST_SUB_DAYS("2000-04-01	2001-04-01 2001-04-02");
 }
 
-void TestDateRange() {}
+void TestDateRange() {
+  {
+    Date start{Year(2000), Month(1), Day(1)};
+    Date finish{Year(2000), Month(1), Day(2)};
+    DateRange range{start, finish};
+    auto num = 0;
+    auto curr = start;
+    for (auto d : range) {
+      num++;
+      ASSERT_EQUAL(d, curr);
+      curr.AddDays(1);
+    }
+    ASSERT_EQUAL(curr, finish.Next());
+    ASSERT_EQUAL(num, 2);
+  }
+  {
+    Date start{Year(2000), Month(1), Day(1)};
+    Date finish{Year(2000), Month(1), Day(31)};
+    DateRange range{start, finish};
+    auto num = 0;
+    auto curr = start;
+    for (auto d : range) {
+      num++;
+      ASSERT_EQUAL(d, curr);
+      curr.AddDays(1);
+    }
+    ASSERT_EQUAL(curr, finish.Next());
+    ASSERT_EQUAL(num, 31);
+  }
+}
+
+void TestEarnCommand() {
+  double count = 10;
+  for (int days = 1; days <= 31; days++) {
+    CommandProcessor processor;
+    EarnCommand command{Date(Year(2000), Month(1), Day(1)),
+                        Date(Year(2000), Month(1), Day(days)), count};
+    processor.Earn(command);
+    auto &earnings = processor.GetEarnings();
+    for (int i = 1; i <= days; i++) {
+      ASSERT_EQUAL(earnings.at(Date(Year(2000), Month(1), Day(i))),
+                   count / days);
+    }
+  }
+}
+
+void TestSample() {
+  stringstream s;
+  s << "8" << endl
+    << "Earn 2000-01-02 2000-01-06 20" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl
+    << "PayTax 2000-01-02 2000-01-03" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl
+    << "Earn 2000-01-03 2000-01-03 10" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl
+    << "PayTax 2000-01-03 2000-01-03" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl;
+  auto commands = ReadCommands(s);
+  auto res = ProcessCommands(commands);
+  vector<string> expected = {"20.000000", "18.960000", "28.960000",
+                             "27.207600"};
+  ASSERT_EQUAL(res, expected);
+}
 
 void RunAllTests() {
   TestRunner tr;
@@ -755,11 +848,16 @@ void RunAllTests() {
   RUN_TEST(tr, TestReadCommands);
   RUN_TEST(tr, TestSubDays);
   RUN_TEST(tr, TestDateRange);
+  RUN_TEST(tr, TestEarnCommand);
+  RUN_TEST(tr, TestSample);
 }
 
 int main() {
-  RunAllTests();
+  // RunAllTests();
   auto commands = ReadCommands();
   auto output = ProcessCommands(commands);
+  for (auto &o : output) {
+    cout << o << endl;
+  }
   return 0;
 }
