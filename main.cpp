@@ -94,6 +94,11 @@ struct Year {
     return temp;
   }
 
+  Year &operator+=(int num) {
+    _year += num;
+    return *this;
+  }
+
   Year Next() { return Year(_year + 1); }
 
  private:
@@ -103,23 +108,43 @@ struct Year {
 
 const array<int, 12> Year::MonthLengths = {31, 28, 31, 30, 31, 30,
                                            31, 31, 30, 31, 30, 31};
+
+const Year EPOCH_START_YEAR{2000};
 struct Date {
-  Date() : year(Year(0)), month(Month(1)), day(Day(1)) {
+  Date() : year(Year(EPOCH_START_YEAR)), month(Month(1)), day(Day(1)) {
     if (day > year.DaysInMonth(month)) {
       throw invalid_argument("day too large");
     }
+    RecalculateEpochDays();
+  }
+
+  explicit Date(int _epoch_days)
+      : epoch_days(_epoch_days),
+        year(Year(EPOCH_START_YEAR)),
+        month(Month(1)),
+        day(Day(1)) {
+    RecalculateYearMonthDay();
   }
 
   Date(Year new_year, Month new_month, Day new_day)
-      : year(new_year), month(new_month), day(new_day) {}
+      : year(new_year), month(new_month), day(new_day) {
+    if (day > year.DaysInMonth(month)) {
+      throw invalid_argument("day too large");
+    }
+    RecalculateEpochDays();
+  }
 
   Date(const Date &other)
-      : year(other.year), month(other.month), day(other.day) {}
+      : epoch_days(other.epoch_days),
+        year(other.year),
+        month(other.month),
+        day(other.day) {}
 
   Date &operator=(const Date &other) {
     year = other.year;
     month = other.month;
     day = other.day;
+    epoch_days = other.epoch_days;
     return *this;
   }
 
@@ -134,7 +159,10 @@ struct Date {
     return temp;
   }
 
-  void AddYears(int add_years) { year = Year(year + add_years); }
+  void AddYears(int add_years) {
+    year = Year(year + add_years);
+    RecalculateEpochDays();
+  }
 
   void AddMonths(int add_months) {
     int add_years = add_months / 12;
@@ -146,75 +174,93 @@ struct Date {
       AddYears(add_years);
       month = Month(month + add_months);
     }
+    RecalculateEpochDays();
   }
 
   void AddDays(int add_days) {
-    // Adding years
-    while (add_days >= year.DaysInYear()) {
-      add_days -= year.DaysInYear();
-      auto next_year = year.Next();
-      if ((year.IsLeap() == next_year.IsLeap()) || (month <= 2)) {
-        year = next_year;
-      } else {
-        auto last_year = year;
-        year = next_year;
-        if (last_year.IsLeap()) {
-          *this = Next();
-        } else {
-          *this = Prev();
-        }
-      }
-    }
-
-    // Adding months and days
-    auto days_till_end = year.DaysInMonth(month) - day;
-    while (add_days > days_till_end) {
-      day = Day(1);
-      AddMonths(1);
-      add_days -= (days_till_end + 1);
-      days_till_end = year.DaysInMonth(month) - day;
-    }
-
-    day = Day(day + add_days);
+    // comment
+    *this = Date(epoch_days + add_days);
   }
+  Date Next() const { return Date(epoch_days + 1); }
+  Date Prev() const { return Date(epoch_days - 1); }
 
-  Date Next() const {
-    int new_day = day + 1;
-    int new_month = month;
-    int new_year = year;
-    if (new_day > year.DaysInMonth(month)) {
-      // i will not consider situation when day was 45 and that
-      // should have been treated as 15th of next month. yet.
-      new_day = 1;
-      new_month += 1;
-      if (new_month > 12) {
-        new_month = 1;
-        new_year += 1;
-      }
-    }
-    return Date(Year(new_year), Month(new_month), Day(new_day));
-  }
+  const Year GetYear() const { return year; }
+  const Month GetMonth() const { return month; }
+  const Day GetDay() const { return day; }
+  int GetEpochDays() const { return epoch_days; }
 
-  Date Prev() const {
-    int new_day = day - 1;
-    int new_month = month;
-    int new_year = year;
-    if (new_day < 1) {
-      // i will not consider situation when day was 45 and that
-      // should have been treated as 15th of next month. yet.
-      new_month -= 1;
-      if (new_month < 1) {
-        new_month = 12;
-        new_year -= 1;
-      }
-      new_day = year.DaysInMonth(Month(new_month));
-    }
-    return Date(Year(new_year), Month(new_month), Day(new_day));
-  }
-
+ private:
+  int epoch_days;
   Year year;
   Month month;
   Day day;
+
+  int NumLeapYears(Year since, Year till) {
+    int count = 0;
+    while (!since.IsLeap() && since < till) {
+      since++;
+    }
+    if (since < till) {
+      // TODO: try [count += (till-since)/4] (dates must be in 2000-2099 range).
+      // BTW I can simplify IsLeap() check
+      do {
+        since += 4;
+        if (since.IsLeap()) {
+          count++;
+        }
+      } while (since < till);
+    }
+    return count;
+  }
+
+  int NumYearDays() {
+    int years = year - EPOCH_START_YEAR;
+    return years * 365 + NumLeapYears(EPOCH_START_YEAR, year);
+  }
+
+  int NumMonthDays() {
+    int days = 0;
+    for (int num = 1; num < month; num++) {
+      days += year.DaysInMonth(Month(num));
+    }
+    return days;
+  }
+
+  void RecalculateEpochDays() {
+    int days = NumYearDays();
+    days += NumMonthDays();
+    days += day - 1;
+    epoch_days = days;
+  }
+
+  void RecalculateYearMonthDay() {
+    int days_left = epoch_days;
+
+    Year current_year = EPOCH_START_YEAR;
+    do {
+      auto current_year_days = current_year.DaysInYear();
+      if (days_left >= current_year_days) {
+        days_left -= current_year_days;
+        current_year++;
+      } else {
+        break;
+      }
+    } while (true);
+    year = current_year;
+
+    Month current_month{1};
+    do {
+      auto current_month_days = year.DaysInMonth(current_month);
+      if (days_left >= current_month_days) {
+        days_left -= current_month_days;
+        current_month = current_month.NextMonth();
+      } else {
+        break;
+      }
+    } while (true);
+
+    day = Day(days_left + 1);
+  }
 };
 
 istream &operator>>(istream &is, Date &date) {
@@ -229,94 +275,29 @@ istream &operator>>(istream &is, Date &date) {
 }
 
 bool operator==(const Date &d1, const Date &d2) {
-  return make_tuple(d1.year, d1.month, d1.day) ==
-         make_tuple(d2.year, d2.month, d2.day);
+  return d1.GetEpochDays() == d2.GetEpochDays();
 }
 
 bool operator!=(const Date &d1, const Date &d2) {
-  return make_tuple(d1.year, d1.month, d1.day) !=
-         make_tuple(d2.year, d2.month, d2.day);
+  return d1.GetEpochDays() != d2.GetEpochDays();
 }
 
 bool operator<(const Date &d1, const Date &d2) {
-  if (d1.year != d2.year) return d1.year < d2.year;
-  if (d1.month != d2.month) return d1.month < d2.month;
-  return d1.day < d2.day;
-  // return make_tuple(d1.year, d1.month, d1.day) <
-  //        make_tuple(d2.year, d2.month, d2.day);
+  return d1.GetEpochDays() < d2.GetEpochDays();
 }
 
 bool operator>(const Date &d1, const Date &d2) {
-  return make_tuple(d1.year, d1.month, d1.day) >
-         make_tuple(d2.year, d2.month, d2.day);
+  return d1.GetEpochDays() > d2.GetEpochDays();
 }
 
 ostream &operator<<(ostream &os, const Date &date) {
-  return os << setfill('0') << setw(4) << date.year << '-' << setw(2)
-            << date.month << '-' << setw(2) << date.day;
+  return os << setfill('0') << setw(4) << date.GetYear() << '-' << setw(2)
+            << date.GetMonth() << '-' << setw(2) << date.GetDay();
 }
-
-// d1 < d2
-int YearlyDiff(const Date &d1, const Date &d2) {
-  int year_days = 0;
-  for (Year year = d1.year; year != d2.year; year++) {
-    year_days += year.DaysInYear();
-    auto next_year = year.Next();
-    // TODO: this is same logic as in Date::AddDays, but AddDays is less
-    // structured. Could it be taken out?
-    if ((year.IsLeap() == next_year.IsLeap()) || (d1.month <= 2)) {
-    } else {
-      if (year.IsLeap()) {
-        year_days -= 1;
-      } else {
-        year_days += 1;
-      }
-    }
-  }
-  return year_days;
-}
-
-// d1 < d2
-int MonthlyDiff(const Year year, const Date &d1, const Date &d2) {
-  int month_days = 0;
-  for (Month m = d1.month; m != d2.month; m = m.NextMonth()) {
-    month_days += year.DaysInMonth(m);
-  }
-  return month_days;
-}
-
-// d1 < d2
-int DailyDiff(const Date &d1, const Date &d2) { return d2.day - d1.day; }
 
 // d1 is expected to be greater than d2
 int operator-(Date d1, Date d2) {
-  int res = 0;
-
-  if (d1 < d2) {
-    res -= YearlyDiff(d1, d2);
-    d1.year = d2.year;
-  } else {
-    res += YearlyDiff(d2, d1);
-    d2.year = d1.year;
-  }
-
-  auto year = d1.year;
-
-  if (d1 < d2) {
-    res -= MonthlyDiff(year, d1, d2);
-    d1.month = d2.month;
-  } else {
-    res += MonthlyDiff(year, d2, d1);
-    d2.month = d1.month;
-  }
-
-  if (d1 < d2) {
-    res -= DailyDiff(d1, d2);
-  } else {
-    res += DailyDiff(d2, d1);
-  }
-
-  return res;
+  return d1.GetEpochDays() - d2.GetEpochDays();
 }
 
 struct Commands {
@@ -529,7 +510,7 @@ vector<string> ProcessCommands(vector<shared_ptr<Command>> commands) {
 void TestDates() {
   {
     stringstream s;
-    s << "0000-01-01";
+    s << "2000-01-01";
     Date d;
     s >> d;
     ASSERT_EQUAL(d, Date());
@@ -548,13 +529,20 @@ void TestDates() {
     s >> d;
     ASSERT_EQUAL(d, Date(Year(3), Month(1), Day(2)));
   }
+  {
+    try {
+      Date d(Year(2011), Month(4), Day(100));
+      ASSERT(false);
+    } catch (...) {
+    }
+  }
 }
 
 void TestDateInc() {
   {
     Date d;
     d++;
-    ASSERT_EQUAL(d, Date(Year(0), Month(1), Day(2)));
+    ASSERT_EQUAL(d, Date(Year(2000), Month(1), Day(2)));
   }
   {
     Date d(Year(2000), Month(1), Day(31));
@@ -585,171 +573,6 @@ void TestDateInc() {
     Date d(Year(2004), Month(2), Day(28));
     d++;
     ASSERT_EQUAL(d, Date(Year(2004), Month(2), Day(29)));
-  }
-  {
-    // Test for a case when day is out of months bounds. If i change it, this
-    // test will fail
-    Date d(Year(2011), Month(4), Day(100));
-    d++;
-    ASSERT_EQUAL(d, Date(Year(2011), Month(5), Day(1)));
-  }
-}
-
-void TestDateAdditionDays() {
-  {
-    Date d(Year(1998), Month(5), Day(1));
-    d.AddDays(31);
-    ASSERT_EQUAL(d, Date(Year(1998), Month(6), Day(1)))
-  }
-  {
-    Date d(Year(1998), Month(5), Day(31));
-    d.AddDays(31);
-    ASSERT_EQUAL(d, Date(Year(1998), Month(7), Day(1)))
-  }
-  {
-    Date d(Year(1998), Month(6), Day(1));
-    d.AddDays(30);
-    ASSERT_EQUAL(d, Date(Year(1998), Month(7), Day(1)))
-  }
-  {
-    Date d(Year(1998), Month(6), Day(30));
-    d.AddDays(30);
-    ASSERT_EQUAL(d, Date(Year(1998), Month(7), Day(30)))
-  }
-  // 1998 -> 1999 ; No leap -> No leap
-  {
-    Date d(Year(1998), Month(1), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(1999), Month(1), Day(1)))
-  }
-  {
-    Date d(Year(1998), Month(1), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(1999), Month(1), Day(2)))
-  }
-  {
-    Date d(Year(1998), Month(2), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(1999), Month(2), Day(1)))
-  }
-  {
-    Date d(Year(1998), Month(2), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(1999), Month(2), Day(2)))
-  }
-  {
-    Date d(Year(1998), Month(3), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(1999), Month(3), Day(1)))
-  }
-  {
-    Date d(Year(1998), Month(2), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(1999), Month(2), Day(2)))
-  }
-  {
-    Date d(Year(1998), Month(4), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(1999), Month(4), Day(1)))
-  }
-  {
-    Date d(Year(1998), Month(4), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(1999), Month(4), Day(2)))
-  }
-  // 1999 -> 2000 ; No leap -> leap
-  {
-    Date d(Year(1999), Month(1), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(2000), Month(1), Day(1)))
-  }
-  {
-    Date d(Year(1999), Month(1), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(2000), Month(1), Day(2)))
-  }
-  {
-    Date d(Year(1999), Month(2), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(2000), Month(2), Day(1)))
-  }
-  {
-    Date d(Year(1999), Month(2), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(2000), Month(2), Day(2)))
-  }
-  {
-    Date d(Year(1999), Month(3), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(2000), Month(2), Day(29)))
-  }
-  {
-    Date d(Year(1999), Month(3), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(2000), Month(3), Day(1)))
-  }
-  {
-    Date d(Year(1999), Month(4), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(2000), Month(3), Day(31)))
-  }
-  {
-    Date d(Year(1999), Month(4), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(2000), Month(4), Day(1)))
-  }
-  // 2000 -> 2001 ; Leap -> No leap
-  {
-    Date d(Year(2000), Month(1), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(2000), Month(12), Day(31)))
-  }
-  {
-    Date d(Year(2000), Month(1), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(2001), Month(1), Day(1)))
-  }
-  {
-    Date d(Year(2000), Month(2), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(2001), Month(1), Day(31)))
-  }
-  {
-    Date d(Year(2000), Month(2), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(2001), Month(2), Day(1)))
-  }
-  {
-    Date d(Year(2000), Month(3), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(2001), Month(3), Day(1)))
-  }
-  {
-    Date d(Year(2000), Month(3), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(2001), Month(3), Day(2)))
-  }
-  {
-    Date d(Year(2000), Month(4), Day(1));
-    d.AddDays(365);
-    ASSERT_EQUAL(d, Date(Year(2001), Month(4), Day(1)))
-  }
-  {
-    Date d(Year(2000), Month(4), Day(1));
-    d.AddDays(366);
-    ASSERT_EQUAL(d, Date(Year(2001), Month(4), Day(2)))
-  }
-
-  // Couple more
-  {
-    Date d(Year(2019), Month(8), Day(1));
-    d.AddDays(113);
-    ASSERT_EQUAL(d, Date(Year(2019), Month(11), Day(22)))
-  }
-  {
-    Date d(Year(2019), Month(8), Day(1));
-    d.AddDays(219);
-    ASSERT_EQUAL(d, Date(Year(2020), Month(3), Day(7)))
   }
 }
 
@@ -893,7 +716,7 @@ void LoadTest() {
   auto commands = ReadCommands(s);
   {
     LOG_DURATION("10k");
-    for (auto i = 0; i < 10'000; i++) {
+    for (auto i = 0; i < 100'000; i++) {
       ProcessCommands(commands);
     }
   }
@@ -903,7 +726,6 @@ void RunAllTests() {
   TestRunner tr;
   RUN_TEST(tr, TestDates);
   RUN_TEST(tr, TestDateInc);
-  RUN_TEST(tr, TestDateAdditionDays);
   RUN_TEST(tr, TestReadCommands);
   RUN_TEST(tr, TestSubDays);
   RUN_TEST(tr, TestDateRange);
