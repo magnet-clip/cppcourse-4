@@ -466,22 +466,25 @@ class CommandProcessor {
       _earnings[d] += earn.value / days;
     }
   }
+
   void Spend(const SpendCommand &spend) {
     auto range = DateRange(spend.from, spend.to);
     double days = range.Days() + 1;
     for (const auto &d : range) {
-      _earnings[d] -= spend.value / days;
+      _spendings[d] += spend.value / days;
     }
   }
+
   string ComputeIncome(const ComputeIncomeCommand &compute) {
     auto range = DateRange(compute.from, compute.to);
     double days = range.Days() + 1;
     double sum = 0;
     for (const auto &d : range) {
-      sum += _earnings[d];
+      sum += (_earnings[d] - _spendings[d]);
     }
     return to_string(sum);
   }
+
   void PayTax(const PayTaxCommand &pay) {
     auto range = DateRange(pay.from, pay.to);
     double days = range.Days() + 1;
@@ -494,6 +497,7 @@ class CommandProcessor {
 
  private:
   map<Date, double> _earnings;
+  map<Date, double> _spendings;
 };
 
 vector<string> ProcessCommands(vector<shared_ptr<Command>> commands) {
@@ -866,8 +870,7 @@ void TestSample() {
 
   auto commands = ReadCommands(s);
   auto res = ProcessCommands(commands);
-  vector<string> expected = {"20.000000", "18.960000", "8.4600000",
-                             "8.4600000"};
+  vector<string> expected = {"20.000000", "18.960000", "8.460000", "8.460000"};
   ASSERT_EQUAL(res, expected);
 }
 
@@ -884,7 +887,7 @@ void RunAllTests() {
 }
 
 int main() {
-  RunAllTests();
+  // RunAllTests();
   auto commands = ReadCommands();
   auto output = ProcessCommands(commands);
   for (auto &o : output) {
