@@ -36,7 +36,9 @@ struct Month {
 // Days start from 1
 struct Day {
   explicit Day(int day) : _day(day) {
-    if (day <= 0) throw invalid_argument("day is <= 0");
+    if (day <= 0) {
+      throw invalid_argument("day is <= 0");
+    }
   }
   operator int() const { return _day; }
   Day &operator=(const Day &other) {
@@ -315,11 +317,14 @@ struct Commands {
   static string ComputeIncomeCommand;
   static string EarnCommand;
   static string PayTaxCommand;
+  static string SpendCommand;
 };
 
 string Commands::ComputeIncomeCommand = "ComputeIncome";
 string Commands::EarnCommand = "Earn";
 string Commands::PayTaxCommand = "PayTax";
+string Commands::SpendCommand = "Spend";
+
 struct Command {
   Command(Date new_from, Date new_to) : from(new_from), to(new_to) {}
   Date from;
@@ -350,16 +355,9 @@ struct ComputeIncomeCommand : public SimpleCommand {
   }
 };
 
-struct PayTaxCommand : public SimpleCommand {
-  using SimpleCommand::SimpleCommand;
-  virtual string Kind() const override { return Commands::PayTaxCommand; }
-};
-
-struct EarnCommand : public Command {
-  EarnCommand(Date from, Date to, int new_value)
+struct MoneyCommand : public Command {
+  MoneyCommand(Date from, Date to, int new_value)
       : Command(from, to), value(new_value) {}
-  int value;
-  virtual string Kind() const override { return Commands::EarnCommand; }
   virtual string ToString() const override {
     ostringstream os;
     os << Kind() << ": from " << from << "; to: " << to << "; value: " << value
@@ -371,10 +369,26 @@ struct EarnCommand : public Command {
         make_tuple(other.Kind(), other.from, other.to)) {
       return false;
     } else {
-      auto earn_other = static_cast<const EarnCommand &>(other);
+      auto &earn_other = static_cast<const MoneyCommand &>(other);
       return value == earn_other.value;
     }
   }
+  int value;
+};
+
+struct PayTaxCommand : public MoneyCommand {
+  using MoneyCommand::MoneyCommand;
+  virtual string Kind() const override { return Commands::PayTaxCommand; }
+};
+
+struct EarnCommand : public MoneyCommand {
+  using MoneyCommand::MoneyCommand;
+  virtual string Kind() const override { return Commands::EarnCommand; }
+};
+
+struct SpendCommand : public MoneyCommand {
+  using MoneyCommand::MoneyCommand;
+  virtual string Kind() const override { return Commands::SpendCommand; }
 };
 
 ostream &operator<<(ostream &os, const Command &command) {
@@ -399,7 +413,13 @@ vector<shared_ptr<Command>> ReadCommands(istream &is = cin) {
       is >> value;
       res.push_back(make_shared<EarnCommand>(from, to, value));
     } else if (command == Commands::PayTaxCommand) {
-      res.push_back(make_shared<PayTaxCommand>(from, to));
+      int value;
+      is >> value;
+      res.push_back(make_shared<PayTaxCommand>(from, to, value));
+    } else if (command == Commands::SpendCommand) {
+      int value;
+      is >> value;
+      res.push_back(make_shared<SpendCommand>(from, to, value));
     }
   }
   return res;
@@ -446,6 +466,13 @@ class CommandProcessor {
       _earnings[d] += earn.value / days;
     }
   }
+  void Spend(const SpendCommand &spend) {
+    auto range = DateRange(spend.from, spend.to);
+    double days = range.Days() + 1;
+    for (const auto &d : range) {
+      _earnings[d] -= spend.value / days;
+    }
+  }
   string ComputeIncome(const ComputeIncomeCommand &compute) {
     auto range = DateRange(compute.from, compute.to);
     double days = range.Days() + 1;
@@ -459,7 +486,7 @@ class CommandProcessor {
     auto range = DateRange(pay.from, pay.to);
     double days = range.Days() + 1;
     for (const auto &d : range) {
-      _earnings[d] *= 0.87;
+      _earnings[d] *= (1.0 - pay.value / 100.0);
     }
   }
 
@@ -483,6 +510,9 @@ vector<string> ProcessCommands(vector<shared_ptr<Command>> commands) {
     } else if (command->Kind() == Commands::PayTaxCommand) {
       auto pay = static_cast<PayTaxCommand &>(*command);
       processor.PayTax(pay);
+    } else if (command->Kind() == Commands::SpendCommand) {
+      auto spend = static_cast<SpendCommand &>(*command);
+      processor.Spend(spend);
     }
   }
   return answers;
@@ -721,14 +751,14 @@ void TestReadCommands() {
     s << "3" << endl;
     s << "Earn 2000-01-02 2000-01-06 20" << endl;
     s << "ComputeIncome 2000-01-01 2001-01-01" << endl;
-    s << "PayTax 2000-01-02 2000-01-03" << endl;
+    s << "PayTax 2000-01-02 2000-01-03 20" << endl;
     auto commands = ReadCommands(s);
     EarnCommand earn{Date(Year(2000), Month(1), Day(2)),
                      Date(Year(2000), Month(1), Day(6)), 20};
     ComputeIncomeCommand compute{Date(Year(2000), Month(1), Day(1)),
                                  Date(Year(2001), Month(1), Day(1))};
     PayTaxCommand payTax{Date(Year(2000), Month(1), Day(2)),
-                         Date(Year(2000), Month(1), Day(3))};
+                         Date(Year(2000), Month(1), Day(3)), 20};
     ASSERT_EQUAL(commands[0]->Kind(), Commands::EarnCommand);
     ASSERT_EQUAL(*commands[0].get(), earn);
     ASSERT_EQUAL(commands[1]->Kind(), Commands::ComputeIncomeCommand);
@@ -827,16 +857,17 @@ void TestSample() {
   s << "8" << endl
     << "Earn 2000-01-02 2000-01-06 20" << endl
     << "ComputeIncome 2000-01-01 2001-01-01" << endl
-    << "PayTax 2000-01-02 2000-01-03" << endl
+    << "PayTax 2000-01-02 2000-01-03 13" << endl
     << "ComputeIncome 2000-01-01 2001-01-01" << endl
-    << "Earn 2000-01-03 2000-01-03 10" << endl
+    << "Spend 2000-12-30 2001-01-02 14" << endl
     << "ComputeIncome 2000-01-01 2001-01-01" << endl
-    << "PayTax 2000-01-03 2000-01-03" << endl
+    << "PayTax 2000-12-30 2000-12-30 13" << endl
     << "ComputeIncome 2000-01-01 2001-01-01" << endl;
+
   auto commands = ReadCommands(s);
   auto res = ProcessCommands(commands);
-  vector<string> expected = {"20.000000", "18.960000", "28.960000",
-                             "27.207600"};
+  vector<string> expected = {"20.000000", "18.960000", "8.4600000",
+                             "8.4600000"};
   ASSERT_EQUAL(res, expected);
 }
 
@@ -853,7 +884,7 @@ void RunAllTests() {
 }
 
 int main() {
-  // RunAllTests();
+  RunAllTests();
   auto commands = ReadCommands();
   auto output = ProcessCommands(commands);
   for (auto &o : output) {
