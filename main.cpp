@@ -1,3 +1,4 @@
+#include "profile.h"
 #include "test_runner.h"
 
 #include <iomanip>
@@ -15,6 +16,7 @@ struct Month {
     if (month <= 0) throw invalid_argument("month is <= 0");
     if (month > 12) throw invalid_argument("month is > 12");
   }
+  Month(const Month &other) : _month(other._month) {}
   operator int() const { return _month; }
   Month &operator=(const Month &other) {
     _month = other._month;
@@ -40,6 +42,7 @@ struct Day {
       throw invalid_argument("day is <= 0");
     }
   }
+  Day(const Day &other) : _day(other._day) {}
   operator int() const { return _day; }
   Day &operator=(const Day &other) {
     _day = other._day;
@@ -236,8 +239,11 @@ bool operator!=(const Date &d1, const Date &d2) {
 }
 
 bool operator<(const Date &d1, const Date &d2) {
-  return make_tuple(d1.year, d1.month, d1.day) <
-         make_tuple(d2.year, d2.month, d2.day);
+  if (d1.year != d2.year) return d1.year < d2.year;
+  if (d1.month != d2.month) return d1.month < d2.month;
+  return d1.day < d2.day;
+  // return make_tuple(d1.year, d1.month, d1.day) <
+  //        make_tuple(d2.year, d2.month, d2.day);
 }
 
 bool operator>(const Date &d1, const Date &d2) {
@@ -477,7 +483,6 @@ class CommandProcessor {
 
   string ComputeIncome(const ComputeIncomeCommand &compute) {
     auto range = DateRange(compute.from, compute.to);
-    double days = range.Days() + 1;
     double sum = 0;
     for (const auto &d : range) {
       sum += (_earnings[d] - _spendings[d]);
@@ -487,7 +492,6 @@ class CommandProcessor {
 
   void PayTax(const PayTaxCommand &pay) {
     auto range = DateRange(pay.from, pay.to);
-    double days = range.Days() + 1;
     for (const auto &d : range) {
       _earnings[d] *= (1.0 - pay.value / 100.0);
     }
@@ -842,7 +846,7 @@ void TestDateRange() {
 }
 
 void TestEarnCommand() {
-  double count = 10;
+  int count = 10;
   for (int days = 1; days <= 31; days++) {
     CommandProcessor processor;
     EarnCommand command{Date(Year(2000), Month(1), Day(1)),
@@ -851,7 +855,7 @@ void TestEarnCommand() {
     auto &earnings = processor.GetEarnings();
     for (int i = 1; i <= days; i++) {
       ASSERT_EQUAL(earnings.at(Date(Year(2000), Month(1), Day(i))),
-                   count / days);
+                   static_cast<double>(count) / days);
     }
   }
 }
@@ -874,6 +878,27 @@ void TestSample() {
   ASSERT_EQUAL(res, expected);
 }
 
+void LoadTest() {
+  stringstream s;
+  s << "8" << endl
+    << "Earn 2000-01-02 2000-01-06 20" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl
+    << "PayTax 2000-01-02 2000-01-03 13" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl
+    << "Spend 2000-12-30 2001-01-02 14" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl
+    << "PayTax 2000-12-30 2000-12-30 13" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl;
+
+  auto commands = ReadCommands(s);
+  {
+    LOG_DURATION("10k");
+    for (auto i = 0; i < 10'000; i++) {
+      ProcessCommands(commands);
+    }
+  }
+}
+
 void RunAllTests() {
   TestRunner tr;
   RUN_TEST(tr, TestDates);
@@ -887,11 +912,12 @@ void RunAllTests() {
 }
 
 int main() {
-  // RunAllTests();
-  auto commands = ReadCommands();
-  auto output = ProcessCommands(commands);
-  for (auto &o : output) {
-    cout << o << endl;
-  }
-  return 0;
+  RunAllTests();
+  LoadTest();
+  // auto commands = ReadCommands();
+  // auto output = ProcessCommands(commands);
+  // for (auto &o : output) {
+  //   cout << o << endl;
+  // }
+  // return 0;
 }
