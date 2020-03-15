@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cmath>
 
 using namespace std;
 
@@ -159,28 +160,7 @@ struct Date {
     return temp;
   }
 
-  void AddYears(int add_years) {
-    year = Year(year + add_years);
-    RecalculateEpochDays();
-  }
-
-  void AddMonths(int add_months) {
-    int add_years = add_months / 12;
-    add_months = add_months % 12;
-    if (month + add_months > 12) {
-      AddYears(add_years + 1);
-      month = Month((month + add_months) % 12);
-    } else {
-      AddYears(add_years);
-      month = Month(month + add_months);
-    }
-    RecalculateEpochDays();
-  }
-
-  void AddDays(int add_days) {
-    // comment
-    *this = Date(epoch_days + add_days);
-  }
+  void AddDays(int add_days) { *this = Date(epoch_days + add_days); }
   Date Next() const { return Date(epoch_days + 1); }
   Date Prev() const { return Date(epoch_days - 1); }
 
@@ -310,6 +290,9 @@ ostream &operator<<(ostream &os, const Date &date) {
 int operator-(Date d1, Date d2) {
   return d1.GetEpochDays() - d2.GetEpochDays();
 }
+
+Date operator+(Date d, int days) { return Date(d.GetEpochDays() + days); }
+Date operator-(Date d, int days) { return Date(d.GetEpochDays() - days); }
 
 struct Commands {
   static string ComputeIncomeCommand;
@@ -481,23 +464,24 @@ class CommandProcessor {
     }
   }
 
-  string ComputeIncome(const ComputeIncomeCommand &compute) {
+  double ComputeIncome(const ComputeIncomeCommand &compute) {
     auto range = DateRange(compute.from, compute.to);
     double sum = 0;
     for (const auto &d : range) {
-      sum += (_earnings[d] - _spendings[d]);
+      sum += _earnings[d] - _spendings[d];
     }
-    return to_string(sum);
+    return sum;
   }
 
   void PayTax(const PayTaxCommand &pay) {
     auto range = DateRange(pay.from, pay.to);
     for (const auto &d : range) {
-      _earnings[d] *= (1.0 - pay.value / 100.0);
+      _earnings[d] *= (1.0 - static_cast<double>(pay.value) / 100.0);
     }
   }
 
   const vector<double> &GetEarnings() const { return _earnings; }
+  const vector<double> &GetSpendings() const { return _spendings; }
 
  private:
   vector<double> _earnings;
@@ -511,7 +495,7 @@ vector<string> ProcessCommands(vector<shared_ptr<Command>> commands) {
     if (command->Kind() == Commands::ComputeIncomeCommand) {
       auto compute = static_cast<ComputeIncomeCommand &>(*command);
       auto amount = processor.ComputeIncome(compute);
-      answers.push_back(amount);
+      answers.push_back(to_string(amount));
     } else if (command->Kind() == Commands::EarnCommand) {
       auto earn = static_cast<EarnCommand &>(*command);
       processor.Earn(earn);
@@ -656,6 +640,77 @@ void TestSubDays() {
   TEST_SUB_DAYS("2000-04-01	2001-04-01 2001-04-02");
 }
 
+#define TEST_ADD_DAYS(str)              \
+  {                                     \
+    istringstream input(str);           \
+    Date start, fin365, fin366;         \
+    input >> start >> fin365 >> fin366; \
+    ASSERT_EQUAL(start + 365, fin365);  \
+    ASSERT_EQUAL(start + 366, fin366);  \
+    ASSERT_EQUAL(fin365 - 365, start);  \
+    ASSERT_EQUAL(fin366 - 366, start);  \
+  }
+
+void TestAddDays() {
+  TEST_ADD_DAYS("2002-01-01	2003-01-01 2003-01-02");
+  TEST_ADD_DAYS("2002-02-01	2003-02-01 2003-02-02");
+  TEST_ADD_DAYS("2002-03-01	2003-03-01 2003-03-02");
+  TEST_ADD_DAYS("2002-04-01	2003-04-01 2003-04-02");
+  TEST_ADD_DAYS("2003-01-01	2004-01-01 2004-01-02");
+  TEST_ADD_DAYS("2003-02-01	2004-02-01 2004-02-02");
+  TEST_ADD_DAYS("2003-03-01	2004-02-29 2004-03-01");
+  TEST_ADD_DAYS("2003-04-01	2004-03-31 2004-04-01");
+  TEST_ADD_DAYS("2004-01-01	2004-12-31 2005-01-01");
+  TEST_ADD_DAYS("2004-02-01	2005-01-31 2005-02-01");
+  TEST_ADD_DAYS("2004-03-01	2005-03-01 2005-03-02");
+  TEST_ADD_DAYS("2004-04-01	2005-04-01 2005-04-02");
+}
+
+void TEST_RANGE_COUNTER(string str) {
+  istringstream input(str);
+  Date start, fin365, fin366;
+  input >> start >> fin365 >> fin366;
+  DateRange d365(start, fin365);
+  DateRange d366(start, fin366);
+  ASSERT_EQUAL(d365.Days(), 365);
+  ASSERT_EQUAL(d366.Days(), 366);
+  {
+    auto num = -1;
+    Date d = start;
+    for (auto i : d365) {
+      num++;
+      d.AddDays(1);
+    }
+    ASSERT_EQUAL(num, 365);
+    ASSERT_EQUAL(d, *d365.end());
+  }
+  {
+    auto num = -1;
+    Date d = start;
+    for (auto i : d366) {
+      num++;
+      d.AddDays(1);
+    }
+    ASSERT_EQUAL(num, 366);
+    ASSERT_EQUAL(d, *d366.end());
+  }
+}
+
+void TestRangeCounters() {
+  TEST_RANGE_COUNTER("2002-01-01 2003-01-01 2003-01-02");
+  TEST_RANGE_COUNTER("2002-02-01 2003-02-01 2003-02-02");
+  TEST_RANGE_COUNTER("2002-03-01 2003-03-01 2003-03-02");
+  TEST_RANGE_COUNTER("2002-04-01 2003-04-01 2003-04-02");
+  TEST_RANGE_COUNTER("2003-01-01 2004-01-01 2004-01-02");
+  TEST_RANGE_COUNTER("2003-02-01 2004-02-01 2004-02-02");
+  TEST_RANGE_COUNTER("2003-03-01 2004-02-29 2004-03-01");
+  TEST_RANGE_COUNTER("2003-04-01 2004-03-31 2004-04-01");
+  TEST_RANGE_COUNTER("2004-01-01 2004-12-31 2005-01-01");
+  TEST_RANGE_COUNTER("2004-02-01 2005-01-31 2005-02-01");
+  TEST_RANGE_COUNTER("2004-03-01 2005-03-01 2005-03-02");
+  TEST_RANGE_COUNTER("2004-04-01 2005-04-01 2005-04-02");
+}
+
 void TestDateRange() {
   {
     Date start{Year(2000), Month(1), Day(1)};
@@ -668,7 +723,7 @@ void TestDateRange() {
       ASSERT_EQUAL(d, curr.GetEpochDays());
       curr.AddDays(1);
     }
-    ASSERT_EQUAL(curr, finish.Next());
+    ASSERT_EQUAL(curr, *range.end());
     ASSERT_EQUAL(num, 2);
   }
   {
@@ -698,6 +753,43 @@ void TestEarnCommand() {
     for (int i = 1; i <= days; i++) {
       ASSERT_EQUAL(earnings[Date(Year(2000), Month(1), Day(i)).GetEpochDays()],
                    static_cast<double>(count) / days);
+    }
+  }
+}
+
+void TestSpendCommand() {
+  int count = 10;
+  for (int days = 1; days <= 31; days++) {
+    CommandProcessor processor;
+    SpendCommand command{Date(Year(2000), Month(1), Day(1)),
+                         Date(Year(2000), Month(1), Day(days)), count};
+    processor.Spend(command);
+    auto &earnings = processor.GetSpendings();
+    for (int i = 1; i <= days; i++) {
+      ASSERT_EQUAL(earnings[Date(Year(2000), Month(1), Day(i)).GetEpochDays()],
+                   static_cast<double>(count) / days);
+    }
+  }
+}
+
+void TestEarnAndSpendCommand() {
+  for (int count = 10; count < 100; count += 10) {
+    for (int days = 1; days <= 31; days++) {
+      CommandProcessor processor;
+      EarnCommand earn{Date(Year(2000), Month(1), Day(1)),
+                       Date(Year(2000), Month(1), Day(days)), count};
+      SpendCommand spend{Date(Year(2000), Month(1), Day(1)),
+                         Date(Year(2000), Month(1), Day(days)), count};
+      ComputeIncomeCommand comp(Date(Year(2000), Month(1), Day(1)),
+                                Date(Year(2000), Month(1), Day(days)));
+      PayTaxCommand pay{Date(Year(2000), Month(1), Day(1)),
+                        Date(Year(2000), Month(1), Day(days)), count};
+      processor.Earn(earn);
+      processor.Spend(spend);
+      ASSERT_EQUAL(processor.ComputeIncome(comp), 0);
+      processor.PayTax(pay);
+      auto res = processor.ComputeIncome(comp);
+      ASSERT(fabs(res + count * count / 100.0) < 0.00000001);
     }
   }
 }
@@ -747,8 +839,12 @@ void RunAllTests() {
   RUN_TEST(tr, TestDateInc);
   RUN_TEST(tr, TestReadCommands);
   RUN_TEST(tr, TestSubDays);
+  RUN_TEST(tr, TestAddDays);
   RUN_TEST(tr, TestDateRange);
+  RUN_TEST(tr, TestRangeCounters);
   RUN_TEST(tr, TestEarnCommand);
+  RUN_TEST(tr, TestSpendCommand);
+  RUN_TEST(tr, TestEarnAndSpendCommand);
   RUN_TEST(tr, TestSample);
 }
 
