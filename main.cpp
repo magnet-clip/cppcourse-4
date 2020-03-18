@@ -1,13 +1,13 @@
 #include "profile.h"
 #include "test_runner.h"
 
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <cmath>
 
 using namespace std;
 
@@ -26,8 +26,10 @@ struct Month {
   static Month Nov;
   static Month Dec;
   explicit Month(int month) : _month(month) {
-    if (month <= 0) throw invalid_argument("month is <= 0");
-    if (month > 12) throw invalid_argument("month is > 12");
+    if (month <= 0)
+      throw invalid_argument("month is <= 0");
+    if (month > 12)
+      throw invalid_argument("month is > 12");
   }
   Month(const Month &other) : _month(other._month) {}
   operator int() const { return _month; }
@@ -44,7 +46,7 @@ struct Month {
     }
   }
 
- private:
+private:
   int _month;
 };
 
@@ -75,7 +77,7 @@ struct Day {
     return *this;
   }
 
- private:
+private:
   int _day;
 };
 
@@ -127,7 +129,7 @@ struct Year {
 
   Year Next() { return Year(_year + 1); }
 
- private:
+private:
   static const array<int, 12> MonthLengths;
   int _year;
 };
@@ -145,9 +147,7 @@ struct Date {
   }
 
   explicit Date(int _epoch_days)
-      : epoch_days(_epoch_days),
-        year(Year(EPOCH_START_YEAR)),
-        month(Month(1)),
+      : epoch_days(_epoch_days), year(Year(EPOCH_START_YEAR)), month(Month(1)),
         day(Day(1)) {
     RecalculateYearMonthDay();
   }
@@ -161,9 +161,7 @@ struct Date {
   }
 
   Date(const Date &other)
-      : epoch_days(other.epoch_days),
-        year(other.year),
-        month(other.month),
+      : epoch_days(other.epoch_days), year(other.year), month(other.month),
         day(other.day) {}
 
   Date &operator=(const Date &other) {
@@ -194,7 +192,7 @@ struct Date {
   const Day GetDay() const { return day; }
   int GetEpochDays() const { return epoch_days; }
 
- private:
+private:
   int epoch_days;
   Year year;
   Month month;
@@ -430,7 +428,7 @@ vector<shared_ptr<Command>> ReadCommands(istream &is = cin) {
 }
 
 class DateRangeIterator {
- public:
+public:
   explicit DateRangeIterator(int epoch_days) : _epoch_days(epoch_days) {}
   DateRangeIterator &operator++() {
     _epoch_days++;
@@ -438,7 +436,7 @@ class DateRangeIterator {
   }
   int &operator*() { return _epoch_days; }
 
- private:
+private:
   int _epoch_days;
 };
 
@@ -451,7 +449,7 @@ bool operator!=(DateRangeIterator &d1, DateRangeIterator &d2) {
 }
 
 class DateRange {
- public:
+public:
   DateRange(Date from, Date to) : _from(from), _to(to) {}
   int Days() const { return _to - _from; }
   DateRangeIterator begin() const {
@@ -461,12 +459,12 @@ class DateRange {
     return DateRangeIterator(_to.Next().GetEpochDays());
   }
 
- private:
+private:
   Date _from, _to;
 };
 
 class CommandProcessor {
- public:
+public:
   CommandProcessor()
       : _earnings(LAST_EPOCH_DATE.GetEpochDays(), 0.0),
         _spendings(LAST_EPOCH_DATE.GetEpochDays(), 0.0) {}
@@ -487,7 +485,7 @@ class CommandProcessor {
     }
   }
 
-  double ComputeIncome(const ComputeIncomeCommand &compute) {
+  double ComputeIncome(const ComputeIncomeCommand &compute) const {
     auto range = DateRange(compute.from, compute.to);
     double sum = 0;
     for (const auto &d : range) {
@@ -524,7 +522,7 @@ class CommandProcessor {
   const vector<double> &GetEarnings() const { return _earnings; }
   const vector<double> &GetSpendings() const { return _spendings; }
 
- private:
+private:
   vector<double> _earnings;
   vector<double> _spendings;
 };
@@ -642,15 +640,15 @@ void TestReadCommands() {
   }
 }
 
-#define TEST_SUB_DAYS(str)              \
-  {                                     \
-    istringstream input(str);           \
-    Date start, fin365, fin366;         \
-    input >> start >> fin365 >> fin366; \
-    ASSERT_EQUAL(fin365 - start, 365);  \
-    ASSERT_EQUAL(fin366 - start, 366);  \
-    ASSERT_EQUAL(start - fin365, -365); \
-    ASSERT_EQUAL(start - fin366, -366); \
+#define TEST_SUB_DAYS(str)                                                     \
+  {                                                                            \
+    istringstream input(str);                                                  \
+    Date start, fin365, fin366;                                                \
+    input >> start >> fin365 >> fin366;                                        \
+    ASSERT_EQUAL(fin365 - start, 365);                                         \
+    ASSERT_EQUAL(fin366 - start, 366);                                         \
+    ASSERT_EQUAL(start - fin365, -365);                                        \
+    ASSERT_EQUAL(start - fin366, -366);                                        \
   }
 
 void TestSubDays() {
@@ -916,15 +914,15 @@ void TestSubDays() {
   TEST_SUB_DAYS("2000-04-01	2001-04-01 2001-04-02");
 }
 
-#define TEST_ADD_DAYS(str)              \
-  {                                     \
-    istringstream input(str);           \
-    Date start, fin365, fin366;         \
-    input >> start >> fin365 >> fin366; \
-    ASSERT_EQUAL(start + 365, fin365);  \
-    ASSERT_EQUAL(start + 366, fin366);  \
-    ASSERT_EQUAL(fin365 - 365, start);  \
-    ASSERT_EQUAL(fin366 - 366, start);  \
+#define TEST_ADD_DAYS(str)                                                     \
+  {                                                                            \
+    istringstream input(str);                                                  \
+    Date start, fin365, fin366;                                                \
+    input >> start >> fin365 >> fin366;                                        \
+    ASSERT_EQUAL(start + 365, fin365);                                         \
+    ASSERT_EQUAL(start + 366, fin366);                                         \
+    ASSERT_EQUAL(fin365 - 365, start);                                         \
+    ASSERT_EQUAL(fin366 - 366, start);                                         \
   }
 
 void TestAddDays() {
@@ -1018,6 +1016,116 @@ void TestDateRange() {
   }
 }
 
+void TestSample2() {
+  stringstream s;
+  s << "8" << endl
+    << "Earn 2000-01-02 2000-01-06 20" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl
+    << "PayTax 2000-01-02 2000-01-03 13" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl
+    << "Spend 2000-12-30 2001-01-02 14" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl
+    << "PayTax 2000-12-30 2000-12-30 13" << endl
+    << "ComputeIncome 2000-01-01 2001-01-01" << endl;
+
+  auto commands = ReadCommands(s);
+  auto res = ProcessCommands(commands);
+  vector<double> expected = {20.000000, 18.960000, 8.460000, 8.460000};
+  ASSERT_EQUAL(res, expected);
+}
+
+void TestSimple2() {
+  {
+    stringstream s;
+    s << "3" << endl
+      << "Earn 2000-01-01 2000-01-1 1" << endl
+      << "PayTax 2000-01-01 2000-01-1 100" << endl
+      << "ComputeIncome 2000-01-01 2000-01-01" << endl;
+
+    double expected = 0;
+
+    auto commands = ReadCommands(s);
+    auto res = ProcessCommands(commands);
+    ASSERT(fabs(res[0] - expected) < 0.0000001);
+  }
+  {
+    stringstream s;
+    s << "3" << endl
+      << "Earn 2000-01-01 2000-01-1 1" << endl
+      << "Spend 2000-01-01 2000-01-1 1" << endl
+      << "ComputeIncome 2000-01-01 2000-01-01" << endl;
+
+    double expected = 0;
+
+    auto commands = ReadCommands(s);
+    auto res = ProcessCommands(commands);
+    ASSERT(fabs(res[0] - expected) < 0.0000001);
+  }
+  {
+    stringstream s;
+    s << "4" << endl
+      << "Earn 2043-01-29 2046-09-23 126352" << endl
+      << "Earn 2026-08-28 2097-08-25 508939" << endl
+      << "Earn 2003-12-11 2036-09-17 802587" << endl
+      << "ComputeIncome 2051-05-13 2080-09-11" << endl;
+
+    double expected = 210299.6947669321380089968;
+
+    auto commands = ReadCommands(s);
+    auto res = ProcessCommands(commands);
+    ASSERT(fabs(res[0] - expected) < 0.0000001);
+  }
+  {
+    stringstream s;
+    s << "6" << endl
+      << "Earn 2000-01-01 2000-01-02 2" << endl
+      << "PayTax 2000-01-01 2000-01-01 100" << endl
+      << "PayTax 2000-01-02 2000-01-02 50" << endl
+      << "ComputeIncome 2000-01-01 2000-01-01" << endl
+      << "ComputeIncome 2000-01-01 2000-01-02" << endl
+      << "ComputeIncome 2000-01-02 2000-01-02" << endl;
+
+    vector<double> expected = {0, 0.5, 0.5};
+
+    auto commands = ReadCommands(s);
+    auto res = ProcessCommands(commands);
+    ASSERT_EQUAL(res, expected);
+  }
+  {
+    stringstream s;
+    s << "6" << endl
+      << "Earn 2000-01-01 2000-01-02 2" << endl
+      << "PayTax 2000-01-02 2000-01-02 50" << endl
+      << "Spend 2000-01-01 2000-01-02 1" << endl
+      << "ComputeIncome 2000-01-01 2000-01-01" << endl
+      << "ComputeIncome 2000-01-02 2000-01-02" << endl
+      << "ComputeIncome 2000-01-01 2000-01-02" << endl;
+
+    vector<double> expected = {0.5, 0, 0.5};
+
+    auto commands = ReadCommands(s);
+    auto res = ProcessCommands(commands);
+    ASSERT_EQUAL(res, expected);
+  }
+  {
+    stringstream s;
+    s << "6" << endl
+      << "Earn 2000-01-01 2000-01-02 2" << endl
+      << "Spend 2000-01-01 2000-01-02 1" << endl
+      << "PayTax 2000-01-02 2000-01-02 50" << endl
+      << "ComputeIncome 2000-01-01 2000-01-01" << endl
+      << "ComputeIncome 2000-01-02 2000-01-02" << endl
+      << "ComputeIncome 2000-01-01 2000-01-02" << endl;
+
+    // makes more sense
+    vector<double> expected = {0.5, 0, 0.5};
+    // vector<double> expected = {0.5, 0.25, 0.75};
+
+    auto commands = ReadCommands(s);
+    auto res = ProcessCommands(commands);
+    ASSERT_EQUAL(res, expected);
+  }
+}
 void TestEarnCommand() {
   int count = 10;
   for (int days = 1; days <= 31; days++) {
@@ -1118,7 +1226,7 @@ void LoadTest() {
   auto commands = ReadCommands(s);
   {
     LOG_DURATION("10k");
-    for (auto i = 0; i < 100'000; i++) {
+    for (auto i = 0; i < 10'000; i++) {
       ProcessCommands(commands);
     }
   }
@@ -1281,11 +1389,13 @@ void RunAllTests() {
   RUN_TEST(tr, TestEarnAndSpendCommand);
   RUN_TEST(tr, TestSample);
   RUN_TEST(tr, TestSimple);
+  RUN_TEST(tr, TestSample2);
+  RUN_TEST(tr, TestSimple2);
   RUN_TEST(tr, TestIt);
 }
 
 int main() {
-  // RunAllTests();
+  RunAllTests();
   // LoadTest();
   auto commands = ReadCommands();
   auto output = ProcessCommands(commands);
@@ -1297,8 +1407,9 @@ int main() {
   //   if (command->Kind() == Commands::EarnCommand) num_earn++;
   // }
   // if (num_earn == 55 && num_comp == 45) return 0;
+  cout.precision(25);
   for (auto &o : output) {
-    cout << setprecision(10) << o << endl;
+    cout << o << endl;
   }
   return 0;
 }
