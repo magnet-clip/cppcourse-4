@@ -135,7 +135,7 @@ double ComputeSum(size_t v, size_t l, size_t r, size_t ql, size_t qr) {
   }
   Push(v, l, r);
   if (ql <= l && r <= qr) {
-    return tree_values[v].first; // - tree_values[v].second;
+    return tree_values[v].first - tree_values[v].second;
   }
   return ComputeSum(v * 2, l, (l + r) / 2, ql, qr) +
          ComputeSum(v * 2 + 1, (l + r) / 2, r, ql, qr);
@@ -159,8 +159,8 @@ void Add(size_t v, size_t l, size_t r, size_t ql, size_t qr, double value) {
       (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
 
   tree_values[v].second =
-      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].first : 0) +
-      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
+      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].second : 0) +
+      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].second : 0);
 }
 
 void Sub(size_t v, size_t l, size_t r, size_t ql, size_t qr, double value) {
@@ -179,8 +179,8 @@ void Sub(size_t v, size_t l, size_t r, size_t ql, size_t qr, double value) {
       (v * 2 < VERTEX_COUNT ? tree_values[v * 2].first : 0) +
       (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
   tree_values[v].second =
-      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].first : 0) +
-      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
+      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].second : 0) +
+      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].second : 0);
 }
 void Multiply(size_t v, size_t l, size_t r, size_t ql, size_t qr,
               double factor) {
@@ -200,8 +200,8 @@ void Multiply(size_t v, size_t l, size_t r, size_t ql, size_t qr,
       (v * 2 < VERTEX_COUNT ? tree_values[v * 2].first : 0) +
       (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
   tree_values[v].second =
-      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].first : 0) +
-      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
+      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].second : 0) +
+      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].second : 0);
 }
 
 int main() {
