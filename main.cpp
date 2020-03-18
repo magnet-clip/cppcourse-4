@@ -106,11 +106,13 @@ size_t ComputeDayIndex(const Date &date) {
   return ComputeDaysDiff(date, START_DATE);
 }
 
-array<double, VERTEX_COUNT> tree_values, tree_add, tree_factor;
+array<double, VERTEX_COUNT> tree_add, tree_factor, tree_sub;
+array<pair<double, double>, VERTEX_COUNT> tree_values;
 
 void Init() {
-  tree_values.fill(0);
+  tree_values.fill({0, 0});
   tree_add.fill(0);
+  tree_sub.fill(0);
   tree_factor.fill(1);
 }
 
@@ -119,11 +121,12 @@ void Push(size_t v, size_t l, size_t r) {
     if (w < VERTEX_COUNT) {
       tree_factor[w] *= tree_factor[v];
       (tree_add[w] *= tree_factor[v]) += tree_add[v];
-      (tree_values[w] *= tree_factor[v]) += tree_add[v] * (r - l) / 2;
+      (tree_values[w].first *= tree_factor[v]) += tree_add[v] * (r - l) / 2;
     }
   }
   tree_factor[v] = 1;
   tree_add[v] = 0;
+  tree_sub[v] = 0;
 }
 
 double ComputeSum(size_t v, size_t l, size_t r, size_t ql, size_t qr) {
@@ -132,7 +135,7 @@ double ComputeSum(size_t v, size_t l, size_t r, size_t ql, size_t qr) {
   }
   Push(v, l, r);
   if (ql <= l && r <= qr) {
-    return tree_values[v];
+    return tree_values[v].first; // - tree_values[v].second;
   }
   return ComputeSum(v * 2, l, (l + r) / 2, ql, qr) +
          ComputeSum(v * 2 + 1, (l + r) / 2, r, ql, qr);
@@ -145,15 +148,40 @@ void Add(size_t v, size_t l, size_t r, size_t ql, size_t qr, double value) {
   Push(v, l, r);
   if (ql <= l && r <= qr) {
     tree_add[v] += value;
-    tree_values[v] += value * (r - l);
+    tree_values[v].first += value * (r - l);
     return;
   }
   Add(v * 2, l, (l + r) / 2, ql, qr, value);
   Add(v * 2 + 1, (l + r) / 2, r, ql, qr, value);
-  tree_values[v] = (v * 2 < VERTEX_COUNT ? tree_values[v * 2] : 0) +
-                   (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1] : 0);
+
+  tree_values[v].first =
+      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].first : 0) +
+      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
+
+  tree_values[v].second =
+      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].first : 0) +
+      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
 }
 
+void Sub(size_t v, size_t l, size_t r, size_t ql, size_t qr, double value) {
+  if (v >= VERTEX_COUNT || qr <= l || r <= ql) {
+    return;
+  }
+  Push(v, l, r);
+  if (ql <= l && r <= qr) {
+    tree_sub[v] += value;
+    tree_values[v].second += value * (r - l);
+    return;
+  }
+  Sub(v * 2, l, (l + r) / 2, ql, qr, value);
+  Sub(v * 2 + 1, (l + r) / 2, r, ql, qr, value);
+  tree_values[v].first =
+      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].first : 0) +
+      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
+  tree_values[v].second =
+      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].first : 0) +
+      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
+}
 void Multiply(size_t v, size_t l, size_t r, size_t ql, size_t qr,
               double factor) {
   if (v >= VERTEX_COUNT || qr <= l || r <= ql) {
@@ -163,13 +191,17 @@ void Multiply(size_t v, size_t l, size_t r, size_t ql, size_t qr,
   if (ql <= l && r <= qr) {
     tree_factor[v] *= factor;
     tree_add[v] *= factor;
-    tree_values[v] *= factor;
+    tree_values[v].first *= factor;
     return;
   }
   Multiply(v * 2, l, (l + r) / 2, ql, qr, factor);
   Multiply(v * 2 + 1, (l + r) / 2, r, ql, qr, factor);
-  tree_values[v] = (v * 2 < VERTEX_COUNT ? tree_values[v * 2] : 0) +
-                   (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1] : 0);
+  tree_values[v].first =
+      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].first : 0) +
+      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
+  tree_values[v].second =
+      (v * 2 < VERTEX_COUNT ? tree_values[v * 2].first : 0) +
+      (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1].first : 0);
 }
 
 int main() {
@@ -201,6 +233,10 @@ int main() {
       double value;
       cin >> value;
       Add(1, 0, DAY_COUNT_P2, idx_from, idx_to, value / (idx_to - idx_from));
+    } else if (query_type == "Spend") {
+      double value;
+      cin >> value;
+      Sub(1, 0, DAY_COUNT_P2, idx_from, idx_to, value / (idx_to - idx_from));
     }
   }
 
