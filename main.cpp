@@ -122,6 +122,8 @@ void Push(size_t v, size_t l, size_t r) {
       tree_factor[w] *= tree_factor[v];
       (tree_add[w] *= tree_factor[v]) += tree_add[v];
       (tree_values[w].first *= tree_factor[v]) += tree_add[v] * (r - l) / 2;
+      tree_sub[w] += tree_sub[v];
+      tree_values[w].second += tree_sub[v] * (r - l) / 2;
     }
   }
   tree_factor[v] = 1;
@@ -226,8 +228,8 @@ int main() {
     if (query_type == "ComputeIncome") {
       cout << ComputeSum(1, 0, DAY_COUNT_P2, idx_from, idx_to) << endl;
     } else if (query_type == "PayTax") {
-      double rate = 13.0;
-      //   cin >> rate;
+      double rate; // = 13.0;
+      cin >> rate;
       Multiply(1, 0, DAY_COUNT_P2, idx_from, idx_to, 1.0 - rate / 100.0);
     } else if (query_type == "Earn") {
       double value;
