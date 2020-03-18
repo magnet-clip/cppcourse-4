@@ -154,19 +154,20 @@ void Add(size_t v, size_t l, size_t r, size_t ql, size_t qr, double value) {
                    (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1] : 0);
 }
 
-void Multiply(size_t v, size_t l, size_t r, size_t ql, size_t qr) {
+void Multiply(size_t v, size_t l, size_t r, size_t ql, size_t qr,
+              double factor) {
   if (v >= VERTEX_COUNT || qr <= l || r <= ql) {
     return;
   }
   Push(v, l, r);
   if (ql <= l && r <= qr) {
-    tree_factor[v] *= 0.87;
-    tree_add[v] *= 0.87;
-    tree_values[v] *= 0.87;
+    tree_factor[v] *= factor;
+    tree_add[v] *= factor;
+    tree_values[v] *= factor;
     return;
   }
-  Multiply(v * 2, l, (l + r) / 2, ql, qr);
-  Multiply(v * 2 + 1, (l + r) / 2, r, ql, qr);
+  Multiply(v * 2, l, (l + r) / 2, ql, qr, factor);
+  Multiply(v * 2 + 1, (l + r) / 2, r, ql, qr, factor);
   tree_values[v] = (v * 2 < VERTEX_COUNT ? tree_values[v * 2] : 0) +
                    (v * 2 + 1 < VERTEX_COUNT ? tree_values[v * 2 + 1] : 0);
 }
@@ -193,7 +194,9 @@ int main() {
     if (query_type == "ComputeIncome") {
       cout << ComputeSum(1, 0, DAY_COUNT_P2, idx_from, idx_to) << endl;
     } else if (query_type == "PayTax") {
-      Multiply(1, 0, DAY_COUNT_P2, idx_from, idx_to);
+      double rate = 13.0;
+      //   cin >> rate;
+      Multiply(1, 0, DAY_COUNT_P2, idx_from, idx_to, 1.0 - rate / 100.0);
     } else if (query_type == "Earn") {
       double value;
       cin >> value;
