@@ -7,10 +7,10 @@ using namespace std;
 Planet Planet::Earth(6371);
 
 double Planet::Distance(GeoPoint a, GeoPoint b) {
-  double lat1 = a.latitude * PI / 180.0;
-  double lon1 = a.longitude * PI / 180.0;
-  double lat2 = b.latitude * PI / 180.0;
-  double lon2 = b.longitude * PI / 180.0;
+  double lat1 = a.GetLatitude() * PI / 180.0;
+  double lon1 = a.GetLongitude() * PI / 180.0;
+  double lat2 = b.GetLatitude() * PI / 180.0;
+  double lon2 = b.GetLongitude() * PI / 180.0;
 
   return acos(sin(lat1) * sin(lat2) +
               cos(lat1) * cos(lat2) * cos(abs(lon1 - lon2))) *
@@ -22,11 +22,16 @@ istream &operator>>(istream &is, GeoPoint &point) {
   is >> lat;
   is.ignore(1);
   is >> lon;
-  point.longitude = Longitude(lon);
-  point.latitude = Latitude(lat);
+  point.SetLongitude(lon);
+  point.SetLatitude(lat);
   return is;
+}
+ostream &operator<<(ostream &os, GeoPoint point) {
+  return os << "(" << point.GetLatitude() << ", " << point.GetLongitude()
+            << ")";
 }
 
 bool operator==(GeoPoint a, GeoPoint b) {
-  return (a.latitude == b.latitude) && (a.longitude == b.longitude);
+  return (a.GetLatitude() == b.GetLatitude()) &&
+         (a.GetLongitude() == b.GetLongitude());
 }

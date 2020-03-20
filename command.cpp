@@ -5,8 +5,7 @@ string Commands::StopCommand = "Stop";
 
 string StopCommand::ToString() const {
   ostringstream os;
-  os << Kind() << " [" << _name << "] (" << _location.latitude << ", "
-     << _location.longitude << ")";
+  os << Kind() << " [" << _name << "] " << GetLocation();
   return os.str();
 }
 
@@ -31,7 +30,8 @@ vector<shared_ptr<Command>> ReadCommands(istream &is) {
       is >> name;
       GeoPoint location;
       is >> location;
-      res.push_back(make_shared<StopCommand>(name, location));
+      res.push_back(make_shared<StopCommand>(name.substr(0, name.length() - 1),
+                                             location));
     }
   }
   return res;

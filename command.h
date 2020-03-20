@@ -24,6 +24,7 @@ struct StopCommand : public Command {
   virtual std::string Kind() const override { return Commands::StopCommand; }
   virtual std::string ToString() const override;
   virtual bool operator==(const Command &other) const override;
+  GeoPoint GetLocation() const { return _location; }
 
 private:
   std::string _name;
