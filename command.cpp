@@ -112,10 +112,10 @@ bool StopCommand::operator==(const Command &other) const {
   return _location == other_cmd._location;
 }
 
-vector<shared_ptr<Command>> ReadCommands(istream &is) {
+vector<CommandPtr> ReadCommands(istream &is) {
   int request_count = 0;
   is >> request_count;
-  vector<shared_ptr<Command>> res;
+  vector<CommandPtr> res;
   for (int i = 0; i < request_count; i++) {
     string command;
     is >> command;

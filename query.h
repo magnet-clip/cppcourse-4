@@ -28,4 +28,5 @@ private:
   int _number;
 };
 
-std::vector<std::shared_ptr<Query>> ReadQueries(std::istream &is = std::cin);
+using QueryPtr = std::shared_ptr<Query>;
+std::vector<QueryPtr> ReadQueries(std::istream &is = std::cin);

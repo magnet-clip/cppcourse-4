@@ -54,4 +54,6 @@ private:
   std::vector<std::string> _stops;
 };
 
-std::vector<std::shared_ptr<Command>> ReadCommands(std::istream &is = std::cin);
+using CommandPtr = std::shared_ptr<Command>;
+
+std::vector<CommandPtr> ReadCommands(std::istream &is = std::cin);

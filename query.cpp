@@ -23,8 +23,8 @@ bool BusQuery::operator==(const Query &other) const {
   return _number == other_qry._number;
 }
 
-vector<shared_ptr<Query>> ReadQueries(istream &is) {
-  vector<shared_ptr<Query>> res;
+vector<QueryPtr> ReadQueries(istream &is) {
+  vector<QueryPtr> res;
 
   int count = 0;
   is >> count;
