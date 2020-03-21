@@ -24,7 +24,57 @@ string StopCommand::ToString() const {
   return os.str();
 }
 
-BusCommand::BusCommand(string_view line) {}
+void RemoveLeadingSpaces(string_view &line) {
+  int first_non_space = line.find_first_not_of(' ');
+  line.remove_prefix(first_non_space);
+}
+
+string_view RemoveTrailingSpaces(string_view line) {
+  int first_non_space = line.find_last_not_of(' ');
+  line.remove_suffix(line.size() - (first_non_space + 1));
+  return line;
+}
+
+int ReadNumber(string_view &line) {
+  RemoveLeadingSpaces(line);
+  auto colon_pos = line.find(':');
+  auto number = stoi(string(line.substr(0, colon_pos)));
+  line.remove_prefix(colon_pos + 1);
+  RemoveLeadingSpaces(line);
+  return number;
+}
+
+void BusCommand::AddStop(string_view str) {
+  _stops.push_back(string(RemoveTrailingSpaces(str)));
+}
+
+BusCommand::BusCommand(string_view line) {
+  _number = ReadNumber(line);
+
+  auto delimiter_pos = line.find_first_of("->");
+  if (delimiter_pos != string::npos) {
+    AddStop(line.substr(0, delimiter_pos));
+    line.remove_prefix(delimiter_pos);
+
+    _circular = line[0] == '>';
+
+    line.remove_prefix(1);
+    char delimiter = _circular ? '>' : '-';
+    while (line.length() > 0) {
+      RemoveLeadingSpaces(line);
+      delimiter_pos = line.find(delimiter);
+      if (delimiter_pos == string::npos) {
+        AddStop(line);
+        return;
+      } else {
+        AddStop(line.substr(0, delimiter_pos));
+        line.remove_prefix(delimiter_pos + 1);
+      }
+    }
+  } else {
+    AddStop(line);
+  }
+}
 
 bool BusCommand::operator==(const Command &other) const {
   if (Kind() != other.Kind()) {

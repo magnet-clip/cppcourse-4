@@ -33,3 +33,34 @@ void TestStopCommandParsing() {
     ASSERT_EQUAL(cmd_stop.GetLocation(), expected);
   }
 }
+
+void TestBusCommandParsing() {
+  stringstream cmd_stream;
+  cmd_stream
+      << "2" << endl
+      << "Bus 256: Biryulyovo Zapadnoye > Biryusinka > Universam > Biryulyovo "
+         "Tovarnaya > Biryulyovo Passazhirskaya > Biryulyovo Zapadnoye"
+      << endl
+      << "Bus 750: Tolstopaltsevo - Marushkino - Rasskazovka" << endl;
+  auto res = ReadCommands(cmd_stream);
+  ASSERT_EQUAL(res[0]->Kind(), Commands::BusCommand);
+  auto bus256 = static_cast<BusCommand &>(*res[0]);
+  ASSERT_EQUAL(bus256.GetNumber(), 256);
+  ASSERT(bus256.IsCircular());
+  ASSERT_EQUAL(bus256.GetStops().size(), 6U);
+  ASSERT_EQUAL(bus256.GetStops()[0], "Biryulyovo Zapadnoye");
+  ASSERT_EQUAL(bus256.GetStops()[1], "Biryusinka");
+  ASSERT_EQUAL(bus256.GetStops()[2], "Universam");
+  ASSERT_EQUAL(bus256.GetStops()[3], "Biryulyovo Tovarnaya");
+  ASSERT_EQUAL(bus256.GetStops()[4], "Biryulyovo Passazhirskaya");
+  ASSERT_EQUAL(bus256.GetStops()[5], "Biryulyovo Zapadnoye");
+
+  ASSERT_EQUAL(res[1]->Kind(), Commands::BusCommand);
+  auto bus750 = static_cast<BusCommand &>(*res[1]);
+  ASSERT_EQUAL(bus750.GetNumber(), 750);
+  ASSERT(!bus750.IsCircular());
+  ASSERT_EQUAL(bus750.GetStops().size(), 3U);
+  ASSERT_EQUAL(bus750.GetStops()[0], "Tolstopaltsevo");
+  ASSERT_EQUAL(bus750.GetStops()[1], "Marushkino");
+  ASSERT_EQUAL(bus750.GetStops()[2], "Rasskazovka");
+}

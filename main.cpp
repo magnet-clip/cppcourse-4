@@ -8,6 +8,7 @@ using namespace std;
 void RunAllTests() {
   TestRunner tr;
   RUN_TEST(tr, TestStopCommandParsing);
+  RUN_TEST(tr, TestBusCommandParsing);
 }
 
 int main() {
