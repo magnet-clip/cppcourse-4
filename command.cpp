@@ -1,28 +1,9 @@
 #include "command.h"
 
 using namespace std;
+
 string Commands::StopCommand = "Stop";
 string Commands::BusCommand = "Bus";
-
-StopCommand::StopCommand(string_view line) {
-  int first_non_space = line.find_first_not_of(" \r\n\t");
-  line.remove_prefix(first_non_space);
-  int colon_pos = line.find(':');
-  _name = string(line.substr(0, colon_pos));
-  line.remove_prefix(colon_pos + 1);
-
-  int comma_pos = line.find(',');
-  double latitude = stod(string(line.substr(0, comma_pos)));
-  line.remove_prefix(comma_pos + 1);
-  double longitude = stod(string(line));
-  _location = GeoPoint(Latitude(latitude), Longitude(longitude));
-}
-
-string StopCommand::ToString() const {
-  ostringstream os;
-  os << Kind() << " [" << _name << "] " << GetLocation();
-  return os.str();
-}
 
 void RemoveLeadingSpaces(string_view &line) {
   int first_non_space = line.find_first_not_of(' ');
@@ -42,6 +23,26 @@ int ReadNumber(string_view &line) {
   line.remove_prefix(colon_pos + 1);
   RemoveLeadingSpaces(line);
   return number;
+}
+
+StopCommand::StopCommand(string_view line) {
+  int first_non_space = line.find_first_not_of(" \r\n\t");
+  line.remove_prefix(first_non_space);
+  int colon_pos = line.find(':');
+  _name = string(line.substr(0, colon_pos));
+  line.remove_prefix(colon_pos + 1);
+
+  int comma_pos = line.find(',');
+  double latitude = stod(string(line.substr(0, comma_pos)));
+  line.remove_prefix(comma_pos + 1);
+  double longitude = stod(string(line));
+  _location = GeoPoint(Latitude(latitude), Longitude(longitude));
+}
+
+string StopCommand::ToString() const {
+  ostringstream os;
+  os << Kind() << " [" << _name << "] " << GetLocation();
+  return os.str();
 }
 
 void BusCommand::AddStop(string_view str) {
