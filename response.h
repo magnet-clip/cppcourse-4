@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-class Responses {
+struct Responses {
   static std::string BusResponse;
 };
 

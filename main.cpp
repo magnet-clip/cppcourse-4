@@ -1,5 +1,6 @@
 #include "command.h"
 #include "command.test.h"
+#include "database.test.h"
 #include "query.h"
 #include "query.test.h"
 #include "test_runner.h"
@@ -12,6 +13,7 @@ void RunAllTests() {
   RUN_TEST(tr, TestStopCommandParsing);
   RUN_TEST(tr, TestBusCommandParsing);
   RUN_TEST(tr, TestBusQueryParsing);
+  RUN_TEST(tr, TestSample);
 }
 
 int main() {

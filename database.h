@@ -6,6 +6,7 @@
 #include "route.h"
 
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 class Database {
@@ -14,6 +15,5 @@ public:
   BusResponse ExecuteBusQuery(const BusQuery &query);
 
 private:
-  unordered_map<string, GeoPoint> _stops;
-  unordered_map<int, RoutePtr> _routes;
+  std::unordered_map<int, Route> _routes;
 };
