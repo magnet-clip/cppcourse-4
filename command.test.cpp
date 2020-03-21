@@ -37,12 +37,16 @@ void TestStopCommandParsing() {
 void TestBusCommandParsing() {
   stringstream cmd_stream;
   cmd_stream
-      << "2" << endl
+      << "3" << endl
       << "Bus 256: Biryulyovo Zapadnoye > Biryusinka > Universam > Biryulyovo "
          "Tovarnaya > Biryulyovo Passazhirskaya > Biryulyovo Zapadnoye"
       << endl
-      << "Bus 750: Tolstopaltsevo - Marushkino - Rasskazovka" << endl;
+      << "Bus 750: Tolstopaltsevo - Marushkino - Rasskazovka" << endl
+      << "Bus 1001: Krekshino" << endl;
+
   auto res = ReadCommands(cmd_stream);
+  ASSERT_EQUAL(res.size(), 3U);
+
   ASSERT_EQUAL(res[0]->Kind(), Commands::BusCommand);
   auto bus256 = static_cast<BusCommand &>(*res[0]);
   ASSERT_EQUAL(bus256.GetNumber(), 256);
@@ -63,4 +67,10 @@ void TestBusCommandParsing() {
   ASSERT_EQUAL(bus750.GetStops()[0], "Tolstopaltsevo");
   ASSERT_EQUAL(bus750.GetStops()[1], "Marushkino");
   ASSERT_EQUAL(bus750.GetStops()[2], "Rasskazovka");
+
+  ASSERT_EQUAL(res[2]->Kind(), Commands::BusCommand);
+  auto bus1001 = static_cast<BusCommand &>(*res[2]);
+  ASSERT_EQUAL(bus1001.GetNumber(), 1001);
+  ASSERT_EQUAL(bus1001.GetStops().size(), 1U);
+  ASSERT_EQUAL(bus1001.GetStops()[0], "Krekshino");
 }

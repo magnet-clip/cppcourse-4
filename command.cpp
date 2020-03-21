@@ -72,6 +72,8 @@ BusCommand::BusCommand(string_view line) {
       }
     }
   } else {
+    // TODO: I suppose there should be no less than 2 stops in any route. Might
+    // make sense to throw here
     AddStop(line);
   }
 }
