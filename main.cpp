@@ -32,7 +32,7 @@ vector<string> Execute(const vector<CommandPtr> &commands,
 }
 
 int main() {
-  RunAllTests();
+  // RunAllTests();
   auto commands = ReadCommands();
   auto queries = ReadQueries();
   auto res = Execute(commands, queries);
