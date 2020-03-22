@@ -12,7 +12,7 @@ struct Response {
 };
 
 struct BusResponse : public Response {
-  int bus_number;
+  std::string bus_number;
   virtual std::string Kind() const = 0;
   virtual std::string ToString() const = 0;
 };
@@ -29,7 +29,7 @@ struct FoundBusResponse : public BusResponse {
 };
 
 struct NoBusResponse : public BusResponse {
-  NoBusResponse(int number) { bus_number = number; }
+  NoBusResponse(std::string number) { bus_number = number; }
   virtual std::string Kind() const override { return Responses::NoBusResponse; }
   virtual std::string ToString() const override;
 };

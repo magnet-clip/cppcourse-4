@@ -17,16 +17,16 @@ void TestBusQueryParsing() {
   {
     ASSERT_EQUAL(res[0]->Kind(), Queries::BusQuery);
     auto bus = static_cast<BusQuery &>(*res[0]);
-    ASSERT_EQUAL(bus.GetNumber(), 256);
+    ASSERT_EQUAL(bus.GetNumber(), "256");
   }
   {
     ASSERT_EQUAL(res[1]->Kind(), Queries::BusQuery);
     auto bus = static_cast<BusQuery &>(*res[1]);
-    ASSERT_EQUAL(bus.GetNumber(), 750);
+    ASSERT_EQUAL(bus.GetNumber(), "750");
   }
   {
     ASSERT_EQUAL(res[2]->Kind(), Queries::BusQuery);
     auto bus = static_cast<BusQuery &>(*res[2]);
-    ASSERT_EQUAL(bus.GetNumber(), 751);
+    ASSERT_EQUAL(bus.GetNumber(), "751");
   }
 }

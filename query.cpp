@@ -1,4 +1,5 @@
 #include "query.h"
+#include "str_utils.h"
 
 #include <sstream>
 #include <string>
@@ -7,7 +8,10 @@ using namespace std;
 
 string Queries::BusQuery = "Bus";
 
-BusQuery::BusQuery(string_view line) { _number = stoi(string(line)); }
+BusQuery::BusQuery(string_view line) {
+  RemoveLeadingSpaces(line);
+  _number = string(line);
+}
 
 string BusQuery::ToString() const {
   ostringstream os;

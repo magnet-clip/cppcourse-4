@@ -18,14 +18,13 @@ struct Query {
 class BusQuery : public Query {
 public:
   BusQuery(std::string_view line);
-  BusQuery(int number) : _number(number) {}
   virtual std::string Kind() const override { return Queries::BusQuery; };
   virtual std::string ToString() const override;
   virtual bool operator==(const Query &other) const override;
-  int GetNumber() const { return _number; }
+  std::string GetNumber() const { return _number; }
 
 private:
-  int _number;
+  std::string _number;
 };
 
 using QueryPtr = std::shared_ptr<Query>;

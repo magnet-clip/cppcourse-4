@@ -1,25 +1,15 @@
 #include "command.h"
+#include "str_utils.h"
 
 using namespace std;
 
 string Commands::StopCommand = "Stop";
 string Commands::BusCommand = "Bus";
 
-void RemoveLeadingSpaces(string_view &line) {
-  int first_non_space = line.find_first_not_of(' ');
-  line.remove_prefix(first_non_space);
-}
-
-string_view RemoveTrailingSpaces(string_view line) {
-  int first_non_space = line.find_last_not_of(' ');
-  line.remove_suffix(line.size() - (first_non_space + 1));
-  return line;
-}
-
-int ReadNumber(string_view &line) {
+string ReadNumber(string_view &line) {
   RemoveLeadingSpaces(line);
   auto colon_pos = line.find(':');
-  auto number = stoi(string(line.substr(0, colon_pos)));
+  auto number = string(line.substr(0, colon_pos));
   line.remove_prefix(colon_pos + 1);
   RemoveLeadingSpaces(line);
   return number;
