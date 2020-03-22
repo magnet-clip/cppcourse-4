@@ -12,10 +12,14 @@
 
 class Database {
 public:
-  Database(const std::vector<CommandPtr> &commands);
-  std::unique_ptr<BusResponse> ExecuteBusQuery(const BusQuery &query);
+  Database() {}
+
+  void ExecuteCommands(const std::vector<CommandPtr> &commands);
   void ExecuteBusCommand(const BusCommand &command);
   void ExecuteStopCommand(const StopCommand &command);
+
+  std::vector<ResponsePtr> ExecuteQueries(const std::vector<QueryPtr> &queries);
+  ResponsePtr ExecuteBusQuery(const BusQuery &query);
 
 private:
   double CalculateRouteLength(const Route &route, const Planet &planet);

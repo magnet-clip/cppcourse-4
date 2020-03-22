@@ -2,7 +2,7 @@
 
 using namespace std;
 
-Database::Database(const vector<CommandPtr> &commands) {
+void Database::ExecuteCommands(const std::vector<CommandPtr> &commands) {
   for (const auto &command_ptr : commands) {
     if (command_ptr->Kind() == Commands::BusCommand) {
       ExecuteBusCommand(static_cast<const BusCommand &>(*command_ptr));
@@ -38,7 +38,17 @@ double Database::CalculateRouteLength(const Route &route,
   return res;
 }
 
-unique_ptr<BusResponse> Database::ExecuteBusQuery(const BusQuery &query) {
+vector<ResponsePtr> Database::ExecuteQueries(const vector<QueryPtr> &queries) {
+  vector<ResponsePtr> res;
+  for (const auto &query : queries) {
+    if (query->Kind() == Queries::BusQuery) {
+      res.push_back(ExecuteBusQuery(static_cast<const BusQuery &>(*query)));
+    }
+  }
+  return res;
+}
+
+ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
   auto number = query.GetNumber();
   if (_routes.count(number)) {
     FoundBusResponse response;
@@ -49,8 +59,8 @@ unique_ptr<BusResponse> Database::ExecuteBusQuery(const BusQuery &query) {
     response.num_unique_stops = route.UniqueStopsCount();
     response.length = CalculateRouteLength(route, Planet::Earth);
 
-    return make_unique<FoundBusResponse>(response);
+    return make_shared<FoundBusResponse>(response);
   } else {
-    return make_unique<NoBusResponse>(number);
+    return make_shared<NoBusResponse>(number);
   }
 }

@@ -17,27 +17,19 @@ void RunAllTests() {
   RUN_TEST(tr, TestBusCommandParsing);
   RUN_TEST(tr, TestBusQueryParsing);
   RUN_TEST(tr, TestSample);
-}
-
-vector<string> Execute(const vector<CommandPtr> &commands,
-                       const vector<QueryPtr> &queries) {
-  Database db{commands};
-  vector<string> res;
-  for (const auto &q : queries) {
-    const BusQuery &bus_query = static_cast<const BusQuery &>(*q);
-    auto response = db.ExecuteBusQuery(bus_query);
-    res.push_back(response->ToString());
-  }
-  return res;
+  RUN_TEST(tr, TestSample2);
 }
 
 int main() {
-  // RunAllTests();
+  RunAllTests();
   auto commands = ReadCommands();
   auto queries = ReadQueries();
-  auto res = Execute(commands, queries);
+
+  Database db;
+  db.ExecuteCommands(commands);
+  auto res = db.ExecuteQueries(queries);
   for (const auto &out : res) {
-    cout << out << endl;
+    cout << out->ToString() << endl;
   }
   return 0;
 }

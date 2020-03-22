@@ -1,15 +1,22 @@
 #pragma once
+
+#include <memory>
 #include <string>
+#include <vector>
 
 struct Responses {
   static std::string FoundBusResponse;
   static std::string NoBusResponse;
+  static std::string FoundStopResponse;
+  static std::string NoStopResponse;
 };
 
 struct Response {
   virtual std::string Kind() const = 0;
   virtual std::string ToString() const = 0;
 };
+
+using ResponsePtr = std::shared_ptr<Response>;
 
 struct BusResponse : public Response {
   std::string bus_number;
@@ -31,5 +38,28 @@ struct FoundBusResponse : public BusResponse {
 struct NoBusResponse : public BusResponse {
   NoBusResponse(std::string number) { bus_number = number; }
   virtual std::string Kind() const override { return Responses::NoBusResponse; }
+  virtual std::string ToString() const override;
+};
+
+struct StopResponse : public Response {
+  std::string stop_number;
+  virtual std::string Kind() const = 0;
+  virtual std::string ToString() const = 0;
+};
+
+struct FoundStopResponse : public StopResponse {
+  std::vector<std::string> stops;
+
+  virtual std::string Kind() const override {
+    return Responses::FoundStopResponse;
+  }
+  virtual std::string ToString() const override;
+};
+
+struct NoStopResponse : public StopResponse {
+  NoStopResponse(std::string number) { stop_number = number; }
+  virtual std::string Kind() const override {
+    return Responses::NoStopResponse;
+  }
   virtual std::string ToString() const override;
 };

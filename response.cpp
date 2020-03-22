@@ -6,6 +6,8 @@ using namespace std;
 
 string Responses::FoundBusResponse = "FoundBusResponse";
 string Responses::NoBusResponse = "NoBusResponse";
+string Responses::FoundStopResponse = "FoundStopResponse";
+string Responses::NoStopResponse = "NoStopResponse";
 
 string FoundBusResponse::ToString() const {
   ostringstream os;
