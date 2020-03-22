@@ -18,21 +18,22 @@ void Database::ExecuteBusCommand(const BusCommand &command) {
 }
 
 void Database::ExecuteStopCommand(const StopCommand &command) {
-  _stops[command.GetName()] = {command.GetLocation(), command.GetName()};
+  _stops.insert(
+      {command.GetName(), {command.GetName(), command.GetLocation()}});
 }
 
 double Database::CalculateRouteLength(const Route &route,
                                       const Planet &planet) {
   double res = 0.0;
 
-  GeoPoint *prev = nullptr;
-  GeoPoint *current = nullptr;
-  for (const auto next_stop : route.GetStops()) {
+  GeoPoint const *prev = nullptr;
+  GeoPoint const *current = nullptr;
+  for (const auto next_stop_name : route.GetStopNames()) {
     if (prev != nullptr && current != nullptr) {
       res += planet.Distance(*prev, *current);
     }
     prev = current;
-    current = &(_stops[next_stop].location);
+    current = &(_stops.at(next_stop_name).GetLocation());
   }
   res += planet.Distance(*prev, *current);
   return res;
@@ -57,7 +58,7 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
     auto &route = _routes.at(number);
 
     response.bus_number = number;
-    response.num_stops = route.GetStops().size();
+    response.num_stops = route.GetStopNames().size();
     response.num_unique_stops = route.UniqueStops().size();
     response.length = CalculateRouteLength(route, Planet::Earth);
 
