@@ -2,7 +2,8 @@
 #include <string>
 
 struct Responses {
-  static std::string BusResponse;
+  static std::string FoundBusResponse;
+  static std::string NoBusResponse;
 };
 
 struct Response {
@@ -12,9 +13,23 @@ struct Response {
 
 struct BusResponse : public Response {
   int bus_number;
+  virtual std::string Kind() const = 0;
+  virtual std::string ToString() const = 0;
+};
+
+struct FoundBusResponse : public BusResponse {
   int num_stops;
   int num_unique_stops;
   double length;
-  virtual std::string Kind() const override { return Responses::BusResponse; }
+
+  virtual std::string Kind() const override {
+    return Responses::FoundBusResponse;
+  }
+  virtual std::string ToString() const override;
+};
+
+struct NoBusResponse : public BusResponse {
+  NoBusResponse(int number) { bus_number = number; }
+  virtual std::string Kind() const override { return Responses::NoBusResponse; }
   virtual std::string ToString() const override;
 };

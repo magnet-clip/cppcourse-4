@@ -4,6 +4,7 @@
 #include "query.h"
 #include "response.h"
 #include "route.h"
+#include "stop.h"
 
 #include <memory>
 #include <unordered_map>
@@ -11,9 +12,12 @@
 
 class Database {
 public:
-  Database(std::vector<CommandPtr> commands);
-  BusResponse ExecuteBusQuery(const BusQuery &query);
+  Database(const std::vector<CommandPtr> &commands);
+  std::unique_ptr<BusResponse> ExecuteBusQuery(const BusQuery &query);
+  void ExecuteBusCommand(const BusCommand &command);
+  void ExecuteStopCommand(const StopCommand &command);
 
 private:
   std::unordered_map<int, Route> _routes;
+  std::unordered_map<std::string, Stop> _stops;
 };

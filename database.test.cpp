@@ -44,6 +44,7 @@ void TestSample() {
   for (const auto &q : queries) {
     const BusQuery &bus_query = static_cast<const BusQuery &>(*q);
     auto response = db.ExecuteBusQuery(bus_query);
-    res.push_back(response.ToString());
+    res.push_back(response->ToString());
   }
+  ASSERT_EQUAL(res, expected);
 }
