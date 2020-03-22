@@ -7,6 +7,7 @@
 
 struct Queries {
   static std::string BusQuery;
+  static std::string StopQuery;
 };
 
 struct Query {
@@ -25,6 +26,18 @@ public:
 
 private:
   std::string _number;
+};
+
+class StopQuery : public Query {
+public:
+  StopQuery(std::string_view line);
+  virtual std::string Kind() const override { return Queries::StopQuery; };
+  virtual std::string ToString() const override;
+  virtual bool operator==(const Query &other) const override;
+  std::string GetName() const { return _name; }
+
+private:
+  std::string _name;
 };
 
 using QueryPtr = std::shared_ptr<Query>;

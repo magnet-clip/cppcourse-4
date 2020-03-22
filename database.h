@@ -20,6 +20,7 @@ public:
 
   std::vector<ResponsePtr> ExecuteQueries(const std::vector<QueryPtr> &queries);
   ResponsePtr ExecuteBusQuery(const BusQuery &query);
+  ResponsePtr ExecuteStopQuery(const StopQuery &query);
 
 private:
   double CalculateRouteLength(const Route &route, const Planet &planet);

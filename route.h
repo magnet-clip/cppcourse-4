@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geomath.h"
+#include <set>
 #include <vector>
 
 class SpanIteratorProvider {
@@ -35,10 +36,11 @@ public:
     return _circular ? _stops.size() : 2 * _stops.size() - 1;
   }
 
-  int UniqueStopsCount() const { return _unique_stops_count; }
+  const std::set<std::string> &UniqueStops() const { return _unique_stops; }
 
 private:
   bool _circular;
   int _unique_stops_count = 0;
   std::vector<std::string> _stops;
+  std::set<std::string> _unique_stops;
 };

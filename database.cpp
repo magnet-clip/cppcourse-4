@@ -1,5 +1,5 @@
 #include "database.h"
-
+#include <set>
 using namespace std;
 
 void Database::ExecuteCommands(const std::vector<CommandPtr> &commands) {
@@ -43,6 +43,8 @@ vector<ResponsePtr> Database::ExecuteQueries(const vector<QueryPtr> &queries) {
   for (const auto &query : queries) {
     if (query->Kind() == Queries::BusQuery) {
       res.push_back(ExecuteBusQuery(static_cast<const BusQuery &>(*query)));
+    } else if (query->Kind() == Queries::StopQuery) {
+      res.push_back(ExecuteStopQuery(static_cast<const StopQuery &>(*query)));
     }
   }
   return res;
@@ -56,11 +58,29 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
 
     response.bus_number = number;
     response.num_stops = route.StopsCount();
-    response.num_unique_stops = route.UniqueStopsCount();
+    response.num_unique_stops = route.UniqueStops().size();
     response.length = CalculateRouteLength(route, Planet::Earth);
 
     return make_shared<FoundBusResponse>(response);
   } else {
     return make_shared<NoBusResponse>(number);
+  }
+}
+
+ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
+  auto stop_name = query.GetName();
+  if (_stops.count(stop_name)) {
+    FoundStopResponse response;
+    response.stop_number = stop_name;
+    set<string> bus_names;
+    for (const auto &[bus_name, stops] : _routes) {
+      if (stops.UniqueStops().count(stop_name)) {
+        bus_names.insert(bus_name);
+      }
+    }
+    response.stops.assign(bus_names.begin(), bus_names.end());
+    return make_shared<FoundStopResponse>(response);
+  } else {
+    return make_shared<NoStopResponse>(stop_name);
   }
 }

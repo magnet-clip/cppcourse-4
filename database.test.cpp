@@ -94,10 +94,9 @@ void TestSample2() {
   Database db;
   db.ExecuteCommands(commands);
 
+  auto responses = db.ExecuteQueries(queries);
   vector<string> res;
-  for (const auto &q : queries) {
-    const BusQuery &bus_query = static_cast<const BusQuery &>(*q);
-    auto response = db.ExecuteBusQuery(bus_query);
+  for (const auto &response : responses) {
     res.push_back(response->ToString());
   }
   ASSERT_EQUAL(res, expected);
