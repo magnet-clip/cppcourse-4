@@ -6,7 +6,7 @@ using namespace std;
 
 Planet Planet::Earth(6371);
 
-double Planet::Distance(GeoPoint a, GeoPoint b) {
+double Planet::Distance(GeoPoint a, GeoPoint b) const {
   double lat1 = a.GetLatitude() * PI / 180.0;
   double lon1 = a.GetLongitude() * PI / 180.0;
   double lat2 = b.GetLatitude() * PI / 180.0;

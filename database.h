@@ -18,6 +18,7 @@ public:
   void ExecuteStopCommand(const StopCommand &command);
 
 private:
+  double CalculateRouteLength(const Route &route, const Planet &planet);
   std::unordered_map<int, Route> _routes;
   std::unordered_map<std::string, Stop> _stops;
 };

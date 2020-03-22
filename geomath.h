@@ -47,7 +47,7 @@ std::ostream &operator<<(std::ostream &os, GeoPoint point);
 class Planet {
 public:
   static Planet Earth;
-  double Distance(GeoPoint a, GeoPoint b);
+  double Distance(GeoPoint a, GeoPoint b) const;
 
 private:
   explicit Planet(double radius) : _radius(radius) {}
