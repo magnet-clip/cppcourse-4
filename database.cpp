@@ -34,6 +34,7 @@ double Database::CalculateRouteLength(const Route &route,
     prev = current;
     current = &(_stops[next_stop].location);
   }
+  res += planet.Distance(*prev, *current);
   return res;
 }
 
