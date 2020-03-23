@@ -38,6 +38,19 @@ void Database::ExecuteStopCommand(const StopCommand &command) {
   AddDistances(stop_ptr, command.GetDistances());
 }
 
+void Database::AddDistance(const StopPair &route, Distance distance) {
+  if (_distances.count(route)) {
+    auto &existing = _distances.at(route);
+    if (!distance.implicit && existing.implicit) {
+      existing = distance;
+    } else if (!distance.implicit && !existing.implicit) {
+      throw domain_error("There's already an explicit distance");
+    }
+  } else {
+    _distances.insert({route, distance});
+  }
+}
+
 void Database::AddDistances(StopPtr stop,
                             const unordered_map<string, double> &distances) {
   for (const auto &[other_name, distance] : distances) {
@@ -45,7 +58,9 @@ void Database::AddDistances(StopPtr stop,
       _stops.insert({other_name, make_shared<Stop>(other_name)});
     }
     const auto &other = _stops[other_name];
-    _distances[{stop->GetName(), other->GetName()}] = distance;
+
+    AddDistance({stop->GetName(), other->GetName()}, {distance, false});
+    AddDistance({other->GetName(), stop->GetName()}, {distance, true});
   }
 }
 

@@ -43,19 +43,15 @@ using StopPtr = std::shared_ptr<Stop>;
 
 class StopPair {
 public:
-  explicit StopPair(const std::string &stop_name)
-      : _first(stop_name), _second({}) {}
-
   StopPair(const std::string &first, const std::string &second)
-      : _first(first < second ? first : second),
-        _second(first < second ? second : first) {}
+      : _first(first), _second(second) {}
 
   const std::string &GetFirst() const { return _first; }
-  const std::optional<std::string> &GetSecond() const { return _second; }
+  const std::string &GetSecond() const { return _second; }
 
 private:
   std::string _first;
-  std::optional<std::string> _second;
+  std::string _second;
 };
 
 bool operator==(const Stop &a, const Stop &b);
@@ -65,10 +61,7 @@ struct StopPairHasher {
   std::hash<std::string> str_hasher;
   size_t operator()(const StopPair &pair) const {
     size_t res = str_hasher(pair.GetFirst());
-    const auto &second = pair.GetSecond();
-    if (second) {
-      res = 37 * res + str_hasher(*second);
-    }
+    res = 37 * res + str_hasher(pair.GetSecond());
     return res;
   }
 };

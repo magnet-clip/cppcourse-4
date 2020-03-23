@@ -63,14 +63,11 @@ void TestSample3() {
   db.ExecuteCommands(commands);
 
   DISTANCE("Tolstopaltsevo", "Marushkino", 3900.0);
-  DISTANCE("Rasskazovka", "Marushkino", 9900.0);
   DISTANCE("Marushkino", "Rasskazovka", 9900.0);
-  DISTANCE("Biryusinka", "Universam", 750.0);
   DISTANCE("Biryulyovo Zapadnoye", "Rossoshanskaya ulitsa", 7500.0);
-  DISTANCE("Rossoshanskaya ulitsa", "Biryulyovo Zapadnoye", 7500.0);
-  DISTANCE("Biryusinka", "Biryulyovo Zapadnoye", 1800.0);
-  DISTANCE("Universam", "Biryulyovo Zapadnoye", 2400.0);
-  DISTANCE("Universam", "Biryusinka", 750.0);
+  DISTANCE("Biryulyovo Zapadnoye", "Biryusinka", 1800.0);
+  DISTANCE("Biryulyovo Zapadnoye", "Universam", 2400.0);
+  DISTANCE("Biryusinka", "Universam", 750.0);
 
   auto responses = db.ExecuteQueries(queries);
   vector<string> res;
