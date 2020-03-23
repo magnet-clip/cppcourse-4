@@ -26,10 +26,11 @@ public:
                                         const std::string &second);
 
 private:
-  void AddDistances(const Stop &stop,
+  void AddDistances(StopPtr stop,
                     const std::unordered_map<std::string, double> &distances);
   double CalculateRouteLength(const Route &route, const Planet &planet);
+
   std::unordered_map<std::string, Route> _routes;
-  std::unordered_map<std::string, Stop> _stops;
+  std::unordered_map<std::string, StopPtr> _stops;
   std::unordered_map<StopPair, double, StopPairHasher> _distances;
 };

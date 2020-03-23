@@ -76,16 +76,28 @@ void TestBusCommandParsing() {
 }
 
 void TestStopCommandParsingExtended() {
+
   {
-    StopCommand tolstopaltsevo(
+    StopCommand stop("Rasskazovka: 55.632761, 37.333324");
+
+    ASSERT_EQUAL(stop.GetName(), "Rasskazovka");
+
+    GeoPoint expected_location{Latitude(55.632761), Longitude(37.333324)};
+    ASSERT_EQUAL(stop.GetLocation(), expected_location);
+
+    auto &distances = stop.GetDistances();
+    ASSERT_EQUAL(distances.size(), 0UL);
+  }
+  {
+    StopCommand stop(
         "Tolstopaltsevo: 55.611087, 37.20829, 3900m to Marushkino");
 
-    ASSERT_EQUAL(tolstopaltsevo.GetName(), "Tolstopaltsevo");
+    ASSERT_EQUAL(stop.GetName(), "Tolstopaltsevo");
 
     GeoPoint expected_location{Latitude(55.611087), Longitude(37.20829)};
-    ASSERT_EQUAL(tolstopaltsevo.GetLocation(), expected_location);
+    ASSERT_EQUAL(stop.GetLocation(), expected_location);
 
-    auto &distances = tolstopaltsevo.GetDistances();
+    auto &distances = stop.GetDistances();
     ASSERT_EQUAL(distances.size(), 1UL);
     ASSERT_EQUAL(distances.at("Marushkino"), 3900.0);
   }

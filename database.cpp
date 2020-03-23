@@ -2,6 +2,15 @@
 #include <set>
 using namespace std;
 
+// void PrintDistances(unordered_map<StopPair, double, StopPairHasher>
+// distances) {
+//   cout << "==================" << endl;
+//   for (const auto &[pair, distance] : distances) {
+//     cout << "[" << pair.GetFirst() << ", " << pair.GetSecond().value_or("X")
+//          << "]: " << distance << endl;
+//   }
+// }
+
 void Database::ExecuteCommands(const std::vector<CommandPtr> &commands) {
   for (const auto &command_ptr : commands) {
     if (command_ptr->Kind() == Commands::BusCommand) {
@@ -13,30 +22,40 @@ void Database::ExecuteCommands(const std::vector<CommandPtr> &commands) {
 }
 
 void Database::ExecuteBusCommand(const BusCommand &command) {
+  // cout << command.ToString() << endl;
   const auto &bus_name = command.GetName();
   _routes.insert({bus_name, {command.IsCircular(), command.GetStops()}});
   for (const auto &stop : command.GetStops()) {
-    _stops[stop].AddBus(bus_name);
+    if (!_stops.count(stop)) {
+      _stops.insert({stop, make_shared<Stop>(stop)});
+    }
+    _stops[stop]->AddBus(bus_name);
   }
 }
 
 void Database::ExecuteStopCommand(const StopCommand &command) {
   const auto &stop_name = command.GetName();
-  Stop new_stop{stop_name, command.GetLocation()};
+  const auto stop_ptr =
+      make_shared<QualifiedStop>(stop_name, command.GetLocation());
+  _stops[stop_name] = stop_ptr;
+
   for (const auto &[bus_name, route] : _routes) {
     if (route.UniqueStops().count(stop_name)) {
-      new_stop.AddBus(bus_name);
+      stop_ptr->AddBus(bus_name);
     }
   }
-  _stops[stop_name] = new_stop;
-  AddDistances(new_stop, command.GetDistances());
+  AddDistances(stop_ptr, command.GetDistances());
 }
 
-void Database::AddDistances(const Stop &stop,
+void Database::AddDistances(StopPtr stop,
                             const unordered_map<string, double> &distances) {
   for (const auto &[other_name, distance] : distances) {
+    if (!_stops.count(other_name)) {
+      _stops.insert({other_name, make_shared<Stop>(other_name)});
+    }
     const auto &other = _stops[other_name];
-    _distances[{stop, other}] = distance;
+    _distances[{stop->GetName(), other->GetName()}] = distance;
+    // PrintDistances(_distances);
   }
 }
 
@@ -51,7 +70,7 @@ double Database::CalculateRouteLength(const Route &route,
       res += planet.Distance(*prev, *current);
     }
     prev = current;
-    current = &(_stops.at(next_stop_name).GetLocation());
+    current = &(_stops.at(next_stop_name)->GetLocation());
   }
   res += planet.Distance(*prev, *current);
   return res;
@@ -92,8 +111,8 @@ ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
     const auto &stop = _stops.at(stop_name);
 
     FoundStopResponse response;
-    response.stop_name = stop.GetName();
-    response.bus_names = stop.GetUniqueBusNames();
+    response.stop_name = stop->GetName();
+    response.bus_names = stop->GetUniqueBusNames();
     return make_shared<FoundStopResponse>(response);
   } else {
     return make_shared<NoStopResponse>(stop_name);
@@ -106,5 +125,8 @@ optional<double> Database::GetStopDistance(const string &first,
     return nullopt;
   }
 
-  return _distances.at({_stops.at(first), _stops.at(second)});
+  // PrintDistances(_distances);
+
+  return _distances.at(
+      {_stops.at(first)->GetName(), _stops.at(second)->GetName()});
 }

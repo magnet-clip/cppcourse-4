@@ -48,12 +48,18 @@ StopCommand::StopCommand(string_view line) {
   double latitude = stod(string(line.substr(0, comma_pos)));
   line.remove_prefix(comma_pos + 1);
 
-  comma_pos = line.find(',');
+  RemoveLeadingSpaces(line);
+  comma_pos = line.find(' ');
+
   double longitude = stod(string(line.substr(0, comma_pos)));
   _location = GeoPoint(Latitude(latitude), Longitude(longitude));
   line.remove_prefix(comma_pos + 1);
 
   // Read distances
+  if (comma_pos == string::npos) {
+    return;
+  }
+
   comma_pos = line.find(',');
   do {
     if (comma_pos == string::npos) {
