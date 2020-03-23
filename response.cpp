@@ -11,9 +11,10 @@ string Responses::NoStopResponse = "NoStopResponse";
 
 string FoundBusResponse::ToString() const {
   ostringstream os;
+  os.precision(7);
   os << "Bus " << bus_number << ": " << num_stops << " stops on route, "
-     << num_unique_stops << " unique stops, " << setprecision(6) << length
-     << " route length";
+     << num_unique_stops << " unique stops, " << length << " route length, "
+     << curvature << " curvature";
   return os.str();
 }
 

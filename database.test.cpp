@@ -8,6 +8,8 @@
 
 using namespace std;
 
+#define DISTANCE(a, b, d) ASSERT_EQUAL(db.GetStopDistance(a, b).value(), d);
+
 void TestSample3() {
   stringstream s;
   s << "13" << endl
@@ -42,7 +44,7 @@ void TestSample3() {
     << "Bus 751" << endl
     << "Stop Samara" << endl
     << "Stop Prazhskaya" << endl
-    << "Stop Biryulyovo Zapadnoye  " << endl;
+    << "Stop Biryulyovo Zapadnoye" << endl;
 
   vector<string> expected{
       "Bus 256: 6 stops on route, 5 unique stops, 5950 route length, 1.361239 "
@@ -60,7 +62,15 @@ void TestSample3() {
   Database db;
   db.ExecuteCommands(commands);
 
-  ASSERT_EQUAL(db.GetStopDistance("Biryusinka", "Universam").value(), 750.0);
+  DISTANCE("Tolstopaltsevo", "Marushkino", 3900.0);
+  DISTANCE("Rasskazovka", "Marushkino", 9900.0);
+  DISTANCE("Marushkino", "Rasskazovka", 9900.0);
+  DISTANCE("Biryusinka", "Universam", 750.0);
+  DISTANCE("Biryulyovo Zapadnoye", "Rossoshanskaya ulitsa", 7500.0);
+  DISTANCE("Rossoshanskaya ulitsa", "Biryulyovo Zapadnoye", 7500.0);
+  DISTANCE("Biryusinka", "Biryulyovo Zapadnoye", 1800.0);
+  DISTANCE("Universam", "Biryulyovo Zapadnoye", 2400.0);
+  DISTANCE("Universam", "Biryusinka", 750.0);
 
   auto responses = db.ExecuteQueries(queries);
   vector<string> res;

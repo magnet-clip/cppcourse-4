@@ -28,6 +28,7 @@ struct FoundBusResponse : public BusResponse {
   int num_stops;
   int num_unique_stops;
   double length;
+  double curvature;
 
   virtual std::string Kind() const override {
     return Responses::FoundBusResponse;

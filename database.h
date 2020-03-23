@@ -28,7 +28,8 @@ public:
 private:
   void AddDistances(StopPtr stop,
                     const std::unordered_map<std::string, double> &distances);
-  double CalculateRouteLength(const Route &route, const Planet &planet);
+  double CalculateHelicopterLength(const Route &route, const Planet &planet);
+  double CalculateRealLength(const Route &route);
 
   std::unordered_map<std::string, Route> _routes;
   std::unordered_map<std::string, StopPtr> _stops;

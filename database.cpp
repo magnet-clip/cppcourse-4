@@ -2,15 +2,6 @@
 #include <set>
 using namespace std;
 
-// void PrintDistances(unordered_map<StopPair, double, StopPairHasher>
-// distances) {
-//   cout << "==================" << endl;
-//   for (const auto &[pair, distance] : distances) {
-//     cout << "[" << pair.GetFirst() << ", " << pair.GetSecond().value_or("X")
-//          << "]: " << distance << endl;
-//   }
-// }
-
 void Database::ExecuteCommands(const std::vector<CommandPtr> &commands) {
   for (const auto &command_ptr : commands) {
     if (command_ptr->Kind() == Commands::BusCommand) {
@@ -55,12 +46,27 @@ void Database::AddDistances(StopPtr stop,
     }
     const auto &other = _stops[other_name];
     _distances[{stop->GetName(), other->GetName()}] = distance;
-    // PrintDistances(_distances);
   }
 }
 
-double Database::CalculateRouteLength(const Route &route,
-                                      const Planet &planet) {
+double Database::CalculateRealLength(const Route &route) {
+  double res = 0.0;
+
+  optional<string> prev = nullopt;
+  optional<string> current = nullopt;
+  for (const auto next_stop_name : route.GetStopNames()) {
+    if (prev && current) {
+      res += _distances[{*prev, *current}];
+    }
+    prev = current;
+    current = next_stop_name;
+  }
+  res += _distances[{*prev, *current}];
+  return res;
+}
+
+double Database::CalculateHelicopterLength(const Route &route,
+                                           const Planet &planet) {
   double res = 0.0;
 
   GeoPoint const *prev = nullptr;
@@ -97,7 +103,9 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
     response.bus_number = number;
     response.num_stops = route.GetStopNames().size();
     response.num_unique_stops = route.UniqueStops().size();
-    response.length = CalculateRouteLength(route, Planet::Earth);
+    response.length = CalculateRealLength(route);
+    response.curvature =
+        response.length / CalculateHelicopterLength(route, Planet::Earth);
 
     return make_shared<FoundBusResponse>(response);
   } else {
@@ -124,8 +132,6 @@ optional<double> Database::GetStopDistance(const string &first,
   if (!_stops.count(first) || !_stops.count(second)) {
     return nullopt;
   }
-
-  // PrintDistances(_distances);
 
   return _distances.at(
       {_stops.at(first)->GetName(), _stops.at(second)->GetName()});
