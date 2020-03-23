@@ -99,3 +99,12 @@ ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
     return make_shared<NoStopResponse>(stop_name);
   }
 }
+
+optional<double> Database::GetStopDistance(const string &first,
+                                           const string &second) {
+  if (!_stops.count(first) || !_stops.count(second)) {
+    return nullopt;
+  }
+
+  return _distances.at({_stops.at(first), _stops.at(second)});
+}

@@ -22,6 +22,9 @@ public:
   ResponsePtr ExecuteBusQuery(const BusQuery &query);
   ResponsePtr ExecuteStopQuery(const StopQuery &query);
 
+  std::optional<double> GetStopDistance(const std::string &first,
+                                        const std::string &second);
+
 private:
   void AddDistances(const Stop &stop,
                     const std::unordered_map<std::string, double> &distances);

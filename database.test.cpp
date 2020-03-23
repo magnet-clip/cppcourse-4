@@ -59,6 +59,9 @@ void TestSample3() {
 
   Database db;
   db.ExecuteCommands(commands);
+
+  ASSERT_EQUAL(db.GetStopDistance("Biryusinka", "Universam").value(), 750.0);
+
   auto responses = db.ExecuteQueries(queries);
   vector<string> res;
   for (const auto &response : responses) {
