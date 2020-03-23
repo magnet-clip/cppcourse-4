@@ -6,6 +6,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 struct Commands {
@@ -29,10 +30,15 @@ public:
   virtual bool operator==(const Command &other) const override;
   std::string GetName() const { return _name; }
   GeoPoint GetLocation() const { return _location; }
+  const std::unordered_map<std::string, double> &GetDistances() const {
+    return _distances;
+  }
 
 private:
+  void AddDistance(std::string_view distance_info);
   std::string _name;
   GeoPoint _location;
+  std::unordered_map<std::string, double> _distances;
 };
 
 class BusCommand : public Command {

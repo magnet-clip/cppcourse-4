@@ -15,18 +15,56 @@ string ReadName(string_view &line) {
   return name;
 }
 
+void StopCommand::AddDistance(string_view distance_info) {
+  RemoveLeadingSpaces(distance_info);
+  // Read distance
+  int m_pos = distance_info.find('m');
+  double distance = stod(string(distance_info.substr(0, m_pos)));
+  distance_info.remove_prefix(m_pos + 1);
+
+  // Skip 'to'
+  RemoveLeadingSpaces(distance_info);
+  int space_pos = distance_info.find(' ');
+  distance_info.remove_prefix(space_pos + 1);
+
+  // Read stop name
+  RemoveLeadingSpaces(distance_info);
+  string name = string(distance_info);
+
+  // Save
+  _distances.insert({name, distance});
+}
+
 StopCommand::StopCommand(string_view line) {
+  // Read name
   int first_non_space = line.find_first_not_of(" \r\n\t");
   line.remove_prefix(first_non_space);
   int colon_pos = line.find(':');
   _name = string(line.substr(0, colon_pos));
   line.remove_prefix(colon_pos + 1);
 
-  int comma_pos = line.find(',');
+  // Read location
+  auto comma_pos = line.find(',');
   double latitude = stod(string(line.substr(0, comma_pos)));
   line.remove_prefix(comma_pos + 1);
-  double longitude = stod(string(line));
+
+  comma_pos = line.find(',');
+  double longitude = stod(string(line.substr(0, comma_pos)));
   _location = GeoPoint(Latitude(latitude), Longitude(longitude));
+  line.remove_prefix(comma_pos + 1);
+
+  // Read distances
+  comma_pos = line.find(',');
+  do {
+    if (comma_pos == string::npos) {
+      AddDistance(line);
+      break;
+    } else {
+      AddDistance(line.substr(0, comma_pos));
+    }
+    line.remove_prefix(comma_pos + 1);
+    comma_pos = line.find(',');
+  } while (true);
 }
 
 string StopCommand::ToString() const {

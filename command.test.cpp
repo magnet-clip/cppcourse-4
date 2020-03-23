@@ -74,3 +74,35 @@ void TestBusCommandParsing() {
   ASSERT_EQUAL(bus1001.GetStops().size(), 1U);
   ASSERT_EQUAL(bus1001.GetStops()[0], "Krekshino");
 }
+
+void TestStopCommandParsingExtended() {
+  {
+    StopCommand tolstopaltsevo(
+        "Tolstopaltsevo: 55.611087, 37.20829, 3900m to Marushkino");
+
+    ASSERT_EQUAL(tolstopaltsevo.GetName(), "Tolstopaltsevo");
+
+    GeoPoint expected_location{Latitude(55.611087), Longitude(37.20829)};
+    ASSERT_EQUAL(tolstopaltsevo.GetLocation(), expected_location);
+
+    auto &distances = tolstopaltsevo.GetDistances();
+    ASSERT_EQUAL(distances.size(), 1UL);
+    ASSERT_EQUAL(distances.at("Marushkino"), 3900.0);
+  }
+  {
+    StopCommand stop(
+        "Biryulyovo Zapadnoye: 55.574371, 37.6517, 7500m to Rossoshanskaya "
+        "ulitsa, 1800m to Biryusinka, 2400m to Universam");
+
+    ASSERT_EQUAL(stop.GetName(), "Biryulyovo Zapadnoye");
+
+    GeoPoint expected_location{Latitude(55.574371), Longitude(37.6517)};
+    ASSERT_EQUAL(stop.GetLocation(), expected_location);
+
+    auto &distances = stop.GetDistances();
+    ASSERT_EQUAL(distances.size(), 3UL);
+    ASSERT_EQUAL(distances.at("Rossoshanskaya ulitsa"), 7500.0);
+    ASSERT_EQUAL(distances.at("Biryusinka"), 1800.0);
+    ASSERT_EQUAL(distances.at("Universam"), 2400.0);
+  }
+}

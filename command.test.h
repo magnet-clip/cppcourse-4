@@ -2,3 +2,4 @@
 
 void TestStopCommandParsing();
 void TestBusCommandParsing();
+void TestStopCommandParsingExtended();

@@ -15,6 +15,7 @@ void RunAllTests() {
   RUN_TEST(tr, TestDistance);
   RUN_TEST(tr, TestStopCommandParsing);
   RUN_TEST(tr, TestBusCommandParsing);
+  RUN_TEST(tr, TestStopCommandParsingExtended);
   RUN_TEST(tr, TestBusQueryParsing);
   RUN_TEST(tr, TestSample);
   RUN_TEST(tr, TestSample2);
