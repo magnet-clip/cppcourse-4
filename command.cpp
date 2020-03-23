@@ -6,13 +6,13 @@ using namespace std;
 string Commands::StopCommand = "Stop";
 string Commands::BusCommand = "Bus";
 
-string ReadNumber(string_view &line) {
+string ReadName(string_view &line) {
   RemoveLeadingSpaces(line);
   auto colon_pos = line.find(':');
-  auto number = string(line.substr(0, colon_pos));
+  auto name = string(line.substr(0, colon_pos));
   line.remove_prefix(colon_pos + 1);
   RemoveLeadingSpaces(line);
-  return number;
+  return name;
 }
 
 StopCommand::StopCommand(string_view line) {
@@ -40,7 +40,7 @@ void BusCommand::AddStop(string_view str) {
 }
 
 BusCommand::BusCommand(string_view line) {
-  _number = ReadNumber(line);
+  _name = ReadName(line);
 
   auto delimiter_pos = line.find_first_of("->");
   if (delimiter_pos != string::npos) {
@@ -75,12 +75,12 @@ bool BusCommand::operator==(const Command &other) const {
   }
   auto &other_cmd = static_cast<const BusCommand &>(other);
   // not comparing stops!
-  return _number == other_cmd._number;
+  return _name == other_cmd._name;
 }
 
 string BusCommand::ToString() const {
   ostringstream os;
-  os << Kind() << " [" << _number << "] (";
+  os << Kind() << " [" << _name << "] (";
   bool first = true;
   for (const auto &stop : _stops) {
     if (!first) {

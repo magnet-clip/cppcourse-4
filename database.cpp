@@ -13,13 +13,22 @@ void Database::ExecuteCommands(const std::vector<CommandPtr> &commands) {
 }
 
 void Database::ExecuteBusCommand(const BusCommand &command) {
-  Route route(command.IsCircular(), command.GetStops());
-  _routes.insert({command.GetNumber(), route});
+  const auto &bus_name = command.GetName();
+  _routes.insert({bus_name, {command.IsCircular(), command.GetStops()}});
+  for (const auto &stop : command.GetStops()) {
+    _stops[stop].AddBus(bus_name);
+  }
 }
 
 void Database::ExecuteStopCommand(const StopCommand &command) {
-  _stops.insert(
-      {command.GetName(), {command.GetName(), command.GetLocation()}});
+  const auto &stop_name = command.GetName();
+  Stop new_stop{stop_name, command.GetLocation()};
+  for (const auto &[bus_name, route] : _routes) {
+    if (route.UniqueStops().count(stop_name)) {
+      new_stop.AddBus(bus_name);
+    }
+  }
+  _stops[stop_name] = new_stop;
 }
 
 double Database::CalculateRouteLength(const Route &route,
@@ -71,15 +80,18 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
 ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
   auto stop_name = query.GetName();
   if (_stops.count(stop_name)) {
+    const auto &stop = _stops.at(stop_name);
+
     FoundStopResponse response;
-    response.stop_number = stop_name;
-    set<string> bus_names;
-    for (const auto &[bus_name, stops] : _routes) {
-      if (stops.UniqueStops().count(stop_name)) {
-        bus_names.insert(bus_name);
-      }
-    }
-    response.stops.assign(bus_names.begin(), bus_names.end());
+    response.stop_name = stop.GetName();
+    response.bus_names = stop.GetUniqueBusNames();
+    // set<string> bus_names;
+    // for (const auto &[bus_name, stops] : _routes) {
+    //   if (stops.UniqueStops().count(stop_name)) {
+    //     bus_names.insert(bus_name);
+    //   }
+    // }
+    // response.bus_names.assign(bus_names.begin(), bus_names.end());
     return make_shared<FoundStopResponse>(response);
   } else {
     return make_shared<NoStopResponse>(stop_name);

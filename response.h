@@ -42,13 +42,13 @@ struct NoBusResponse : public BusResponse {
 };
 
 struct StopResponse : public Response {
-  std::string stop_number;
+  std::string stop_name;
   virtual std::string Kind() const = 0;
   virtual std::string ToString() const = 0;
 };
 
 struct FoundStopResponse : public StopResponse {
-  std::vector<std::string> stops;
+  std::vector<std::string> bus_names;
 
   virtual std::string Kind() const override {
     return Responses::FoundStopResponse;
@@ -57,7 +57,7 @@ struct FoundStopResponse : public StopResponse {
 };
 
 struct NoStopResponse : public StopResponse {
-  NoStopResponse(std::string number) { stop_number = number; }
+  NoStopResponse(std::string name) { stop_name = name; }
   virtual std::string Kind() const override {
     return Responses::NoStopResponse;
   }

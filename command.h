@@ -38,18 +38,18 @@ private:
 class BusCommand : public Command {
 public:
   BusCommand(std::string_view line);
-  BusCommand(std::string number, std::vector<std::string> stops)
-      : _number(number), _circular(false), _stops(stops) {}
+  BusCommand(std::string name, std::vector<std::string> stops)
+      : _name(name), _circular(false), _stops(stops) {}
   virtual std::string Kind() const override { return Commands::BusCommand; }
   virtual std::string ToString() const override;
   virtual bool operator==(const Command &other) const override;
-  std::string GetNumber() const { return _number; }
+  std::string GetName() const { return _name; }
   std::vector<std::string> GetStops() const { return _stops; };
   bool IsCircular() const { return _circular; };
 
 private:
   void AddStop(std::string_view str);
-  std::string _number;
+  std::string _name;
   bool _circular;
   std::vector<std::string> _stops;
 };

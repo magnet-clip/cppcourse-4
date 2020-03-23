@@ -49,7 +49,7 @@ void TestBusCommandParsing() {
 
   ASSERT_EQUAL(res[0]->Kind(), Commands::BusCommand);
   auto bus256 = static_cast<BusCommand &>(*res[0]);
-  ASSERT_EQUAL(bus256.GetNumber(), "256");
+  ASSERT_EQUAL(bus256.GetName(), "256");
   ASSERT(bus256.IsCircular());
   ASSERT_EQUAL(bus256.GetStops().size(), 6U);
   ASSERT_EQUAL(bus256.GetStops()[0], "Biryulyovo Zapadnoye");
@@ -61,7 +61,7 @@ void TestBusCommandParsing() {
 
   ASSERT_EQUAL(res[1]->Kind(), Commands::BusCommand);
   auto bus750 = static_cast<BusCommand &>(*res[1]);
-  ASSERT_EQUAL(bus750.GetNumber(), "750");
+  ASSERT_EQUAL(bus750.GetName(), "750");
   ASSERT(!bus750.IsCircular());
   ASSERT_EQUAL(bus750.GetStops().size(), 3U);
   ASSERT_EQUAL(bus750.GetStops()[0], "Tolstopaltsevo");
@@ -70,7 +70,7 @@ void TestBusCommandParsing() {
 
   ASSERT_EQUAL(res[2]->Kind(), Commands::BusCommand);
   auto bus1001 = static_cast<BusCommand &>(*res[2]);
-  ASSERT_EQUAL(bus1001.GetNumber(), "1001");
+  ASSERT_EQUAL(bus1001.GetName(), "1001");
   ASSERT_EQUAL(bus1001.GetStops().size(), 1U);
   ASSERT_EQUAL(bus1001.GetStops()[0], "Krekshino");
 }

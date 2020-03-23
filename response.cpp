@@ -25,13 +25,13 @@ string NoBusResponse::ToString() const {
 
 string FoundStopResponse::ToString() const {
   ostringstream os;
-  os << "Stop " << stop_number << ": ";
-  if (stops.size() == 0) {
+  os << "Stop " << stop_name << ": ";
+  if (bus_names.size() == 0) {
     os << "no buses";
   } else {
     os << "buses";
-    for (const auto &stop : stops) {
-      os << " " << stop;
+    for (const auto &bus_name : bus_names) {
+      os << " " << bus_name;
     }
   }
   return os.str();
@@ -39,6 +39,6 @@ string FoundStopResponse::ToString() const {
 
 string NoStopResponse::ToString() const {
   ostringstream os;
-  os << "Stop " << stop_number << ": not found";
+  os << "Stop " << stop_name << ": not found";
   return os.str();
 }
