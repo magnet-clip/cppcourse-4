@@ -41,6 +41,9 @@ private:
   std::optional<Stop> _second;
 };
 
+bool operator==(const Stop &a, const Stop &b);
+bool operator==(const StopPair &a, const StopPair &b);
+
 struct StopPairHasher {
   std::hash<std::string> str_hasher;
   size_t operator()(const StopPair &pair) const {

@@ -29,6 +29,15 @@ void Database::ExecuteStopCommand(const StopCommand &command) {
     }
   }
   _stops[stop_name] = new_stop;
+  AddDistances(new_stop, command.GetDistances());
+}
+
+void Database::AddDistances(const Stop &stop,
+                            const unordered_map<string, double> &distances) {
+  for (const auto &[other_name, distance] : distances) {
+    const auto &other = _stops[other_name];
+    _distances[{stop, other}] = distance;
+  }
 }
 
 double Database::CalculateRouteLength(const Route &route,

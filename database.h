@@ -23,6 +23,8 @@ public:
   ResponsePtr ExecuteStopQuery(const StopQuery &query);
 
 private:
+  void AddDistances(const Stop &stop,
+                    const std::unordered_map<std::string, double> &distances);
   double CalculateRouteLength(const Route &route, const Planet &planet);
   std::unordered_map<std::string, Route> _routes;
   std::unordered_map<std::string, Stop> _stops;

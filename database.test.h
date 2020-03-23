@@ -1,4 +1,3 @@
 #pragma once
 
-void TestSample();
-void TestSample2();
+void TestSample3();

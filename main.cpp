@@ -17,8 +17,7 @@ void RunAllTests() {
   RUN_TEST(tr, TestBusCommandParsing);
   RUN_TEST(tr, TestStopCommandParsingExtended);
   RUN_TEST(tr, TestBusQueryParsing);
-  RUN_TEST(tr, TestSample);
-  RUN_TEST(tr, TestSample2);
+  RUN_TEST(tr, TestSample3);
 }
 
 int main() {
