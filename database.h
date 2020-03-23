@@ -26,4 +26,5 @@ private:
   double CalculateRouteLength(const Route &route, const Planet &planet);
   std::unordered_map<std::string, Route> _routes;
   std::unordered_map<std::string, Stop> _stops;
+  std::unordered_map<StopPair, double, StopPairHasher> _distances;
 };

@@ -25,3 +25,30 @@ private:
   GeoPoint _location;
   std::set<std::string> _buses;
 };
+
+class StopPair {
+public:
+  explicit StopPair(Stop stop) : _first(stop), _second({}) {}
+  StopPair(Stop first, Stop second)
+      : _first(first.GetName() < second.GetName() ? first : second),
+        _second(first.GetName() < second.GetName() ? second : first) {}
+
+  const Stop &GetFirst() const { return _first; }
+  const std::optional<Stop> &GetSecond() const { return _second; }
+
+private:
+  Stop _first;
+  std::optional<Stop> _second;
+};
+
+struct StopPairHasher {
+  std::hash<std::string> str_hasher;
+  size_t operator()(const StopPair &pair) const {
+    size_t res = str_hasher(pair.GetFirst().GetName());
+    const auto &second = pair.GetSecond();
+    if (second) {
+      res = 37 * res + str_hasher(second->GetName());
+    }
+    return res;
+  }
+};

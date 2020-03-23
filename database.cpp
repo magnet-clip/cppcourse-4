@@ -85,13 +85,6 @@ ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
     FoundStopResponse response;
     response.stop_name = stop.GetName();
     response.bus_names = stop.GetUniqueBusNames();
-    // set<string> bus_names;
-    // for (const auto &[bus_name, stops] : _routes) {
-    //   if (stops.UniqueStops().count(stop_name)) {
-    //     bus_names.insert(bus_name);
-    //   }
-    // }
-    // response.bus_names.assign(bus_names.begin(), bus_names.end());
     return make_shared<FoundStopResponse>(response);
   } else {
     return make_shared<NoStopResponse>(stop_name);
