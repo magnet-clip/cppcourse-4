@@ -13,6 +13,26 @@
 #include <unordered_map>
 #include <vector>
 
+class RouteStorage {
+public:
+private:
+  std::unordered_map<std::string, Route> _routes;
+};
+
+class StopsStorage {
+  std::unordered_map<std::string, StopPtr> _stops;
+};
+
+class DistanceStorage {
+public:
+  void AddDistances(StopPtr stop,
+                    const std::unordered_map<std::string, double> &distances);
+  void AddDistance(const StopPair &route, Distance distance);
+
+private:
+  std::unordered_map<StopPair, Distance, StopPairHasher> _distances;
+};
+
 class Database {
 public:
   void ExecuteCommands(const std::vector<CommandPtr> &commands);
