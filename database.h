@@ -1,6 +1,9 @@
 #pragma once
 
 #include "command.h"
+#include "distance.h"
+#include "distance_calc.h"
+#include "geomath.h"
 #include "query.h"
 #include "response.h"
 #include "route.h"
@@ -9,12 +12,6 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-
-struct Distance {
-  double distance;
-  bool implicit;
-  operator double() { return distance; }
-};
 
 class Database {
 public:
@@ -33,10 +30,11 @@ private:
   void AddDistances(StopPtr stop,
                     const std::unordered_map<std::string, double> &distances);
   void AddDistance(const StopPair &route, Distance distance);
-  double CalculateHelicopterLength(const Route &route, const Planet &planet);
-  double CalculateRealLength(const Route &route);
 
   std::unordered_map<std::string, Route> _routes;
   std::unordered_map<std::string, StopPtr> _stops;
   std::unordered_map<StopPair, Distance, StopPairHasher> _distances;
+
+  HelicopterDistanceCalculator _helicopter_dist{Planet::Earth, &_stops};
+  GivenDistanceCalculator _given_dist{&_distances};
 };

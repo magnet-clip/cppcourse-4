@@ -64,39 +64,6 @@ void Database::AddDistances(StopPtr stop,
   }
 }
 
-double Database::CalculateRealLength(const Route &route) {
-  double res = 0.0;
-
-  optional<string> prev = nullopt;
-  optional<string> current = nullopt;
-  for (const auto next_stop_name : route.GetStopNames()) {
-    if (prev && current) {
-      res += _distances[{*prev, *current}];
-    }
-    prev = current;
-    current = next_stop_name;
-  }
-  res += _distances[{*prev, *current}];
-  return res;
-}
-
-double Database::CalculateHelicopterLength(const Route &route,
-                                           const Planet &planet) {
-  double res = 0.0;
-
-  GeoPoint const *prev = nullptr;
-  GeoPoint const *current = nullptr;
-  for (const auto next_stop_name : route.GetStopNames()) {
-    if (prev != nullptr && current != nullptr) {
-      res += planet.Distance(*prev, *current);
-    }
-    prev = current;
-    current = &(_stops.at(next_stop_name)->GetLocation());
-  }
-  res += planet.Distance(*prev, *current);
-  return res;
-}
-
 vector<ResponsePtr> Database::ExecuteQueries(const vector<QueryPtr> &queries) {
   vector<ResponsePtr> res;
   for (const auto &query : queries) {
@@ -118,9 +85,8 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
     response.bus_number = number;
     response.num_stops = route.GetStopNames().size();
     response.num_unique_stops = route.UniqueStops().size();
-    response.length = CalculateRealLength(route);
-    response.curvature =
-        response.length / CalculateHelicopterLength(route, Planet::Earth);
+    response.length = _given_dist.Calculate(route);
+    response.curvature = response.length / _helicopter_dist.Calculate(route);
 
     return make_shared<FoundBusResponse>(response);
   } else {
