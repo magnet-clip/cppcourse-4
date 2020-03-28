@@ -2,25 +2,25 @@
 
 using namespace std;
 
-void RouteStorage::Add(const string &bus_name, bool is_circular,
+void RouteStorage::Add(BusId bus_id, bool is_circular,
                        const vector<StopId> &stop_names) {
-  _routes.insert({bus_name, {is_circular, stop_names}});
+  _routes.insert({bus_id, {is_circular, stop_names}});
 }
 
-vector<string> RouteStorage::GetBusesByStop(const StopId &stop_id) {
-  vector<string> res;
+vector<BusId> RouteStorage::GetBusesByStop(StopId stop_id) {
+  vector<BusId> res;
 
-  for (const auto &[bus_name, route] : _routes) {
+  for (const auto &[bus_id, route] : _routes) {
     if (route.UniqueStops().count(stop_id)) {
-      res.push_back(bus_name);
+      res.push_back(bus_id);
     }
   }
 
   return res;
 }
 
-optional<Route> RouteStorage::TryGet(const string &bus_name) {
-  const auto it = _routes.find(bus_name);
+optional<Route> RouteStorage::TryGet(BusId bus_id) {
+  const auto it = _routes.find(bus_id);
   if (it != _routes.end()) {
     return it->second;
   }

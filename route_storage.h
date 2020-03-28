@@ -9,13 +9,13 @@
 
 class RouteStorage {
 public:
-  void Add(const std::string &bus_name, bool is_circular,
-           const std::vector<StopId> &stops);
+  void Add(BusId bus_id, bool is_circular, const std::vector<StopId> &stops);
 
-  std::vector<std::string> GetBusesByStop(const StopId &stop_id);
+  std::vector<BusId> GetBusesByStop(StopId stop_id);
 
-  std::optional<Route> TryGet(const std::string &bus_name);
+  std::optional<Route> TryGet(BusId bus_id);
+  Route Get(BusId bus_id) { return _routes.at(bus_id); }
 
 private:
-  std::unordered_map<std::string, Route> _routes;
+  std::unordered_map<BusId, Route> _routes;
 };

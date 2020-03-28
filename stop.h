@@ -4,9 +4,9 @@
 #include "id.h"
 
 #include <memory>
-#include <set>
 #include <stdexcept>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 class Stop {
@@ -16,14 +16,14 @@ public:
   virtual const GeoPoint &GetLocation() const {
     throw std::domain_error("Stop [" + _name + "] has no location specified");
   }
-  void AddBus(std::string bus_name) { _buses.insert(bus_name); }
-  std::vector<std::string> GetUniqueBusNames() const {
+  void AddBus(BusId bus_id) { _buses.insert(bus_id); }
+  std::vector<BusId> GetUniqueBuses() const {
     return {_buses.begin(), _buses.end()};
   }
 
 private:
   std::string _name;
-  std::set<std::string> _buses;
+  std::unordered_set<BusId> _buses;
 };
 
 class QualifiedStop : public Stop {

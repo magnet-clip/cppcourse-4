@@ -14,11 +14,12 @@ void Database::ExecuteCommands(const std::vector<CommandPtr> &commands) {
 
 void Database::ExecuteBusCommand(const BusCommand &command) {
   const auto &bus_name = command.GetName();
+  auto bus_id = _bus.Add(bus_name);
   vector<StopId> stop_ids = _stop.GetOrAddUnqualifiedBulk(command.GetStops());
 
-  _route.Add(bus_name, command.IsCircular(), stop_ids);
+  _route.Add(bus_id, command.IsCircular(), stop_ids);
   for (const auto &stop_id : stop_ids) {
-    _stop.Get(stop_id)->AddBus(bus_name);
+    _stop.Get(stop_id)->AddBus(bus_id);
   }
 }
 
@@ -27,8 +28,8 @@ void Database::ExecuteStopCommand(const StopCommand &command) {
   const auto &stop_id =
       _stop.AddQualifiedStop(stop_name, command.GetLocation());
   const auto stop_ptr = _stop.Get(stop_id);
-  for (const auto &bus_name : _route.GetBusesByStop(stop_id)) {
-    stop_ptr->AddBus(bus_name);
+  for (const auto &bus_id : _route.GetBusesByStop(stop_id)) {
+    stop_ptr->AddBus(bus_id);
   }
   vector<pair<StopId, double>> distances;
   for (const auto &[other_name, distance] : command.GetDistances()) {
@@ -51,13 +52,17 @@ vector<ResponsePtr> Database::ExecuteQueries(const vector<QueryPtr> &queries) {
 
 ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
   const auto bus_name = query.GetNumber();
-  if (const auto &route = _route.TryGet(bus_name); route != nullopt) {
+
+  if (auto bus_id = _bus.TryFind(bus_name); bus_id != nullopt) {
+    const auto &route = _route.Get(*bus_id);
+
     FoundBusResponse response;
     response.bus_number = bus_name;
-    response.num_stops = route->GetStopIds().size();
-    response.num_unique_stops = route->UniqueStops().size();
-    response.length = _given_dist.Calculate(*route);
-    response.curvature = response.length / _helicopter_dist.Calculate(*route);
+    response.num_stops = route.GetStopIds().size();
+    response.num_unique_stops = route.UniqueStops().size();
+    response.length = _given_dist.Calculate(route);
+    response.curvature = response.length / _helicopter_dist.Calculate(route);
+
     return make_shared<FoundBusResponse>(response);
   } else {
     return make_shared<NoBusResponse>(bus_name);
@@ -69,7 +74,7 @@ ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
   if (const auto &stop = _stop.TryGetByName(stop_name); stop != nullptr) {
     FoundStopResponse response;
     response.stop_name = stop->GetName();
-    response.bus_names = stop->GetUniqueBusNames();
+    response.bus_names = _bus.GetBusNames(stop->GetUniqueBuses());
     return make_shared<FoundStopResponse>(response);
   } else {
     return make_shared<NoStopResponse>(stop_name);
