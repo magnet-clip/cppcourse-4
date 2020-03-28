@@ -1,6 +1,7 @@
 #pragma once
 
 #include "geomath.h"
+#include "id.h"
 
 #include <memory>
 #include <set>
@@ -43,25 +44,23 @@ using StopPtr = std::shared_ptr<Stop>;
 
 class StopPair {
 public:
-  StopPair(const std::string &first, const std::string &second)
-      : _first(first), _second(second) {}
+  StopPair(StopId first, StopId second) : _first(first), _second(second) {}
 
-  const std::string &GetFirst() const { return _first; }
-  const std::string &GetSecond() const { return _second; }
+  const StopId &GetFirst() const { return _first; }
+  const StopId &GetSecond() const { return _second; }
 
 private:
-  std::string _first;
-  std::string _second;
+  StopId _first;
+  StopId _second;
 };
 
 bool operator==(const Stop &a, const Stop &b);
 bool operator==(const StopPair &a, const StopPair &b);
 
 struct StopPairHasher {
-  std::hash<std::string> str_hasher;
   size_t operator()(const StopPair &pair) const {
-    size_t res = str_hasher(pair.GetFirst());
-    res = 37 * res + str_hasher(pair.GetSecond());
+    size_t res = pair.GetFirst();
+    res = 37 * res + pair.GetSecond();
     return res;
   }
 };

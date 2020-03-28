@@ -1,5 +1,6 @@
 #pragma once
 
+#include "bus_storage.h"
 #include "command.h"
 #include "distance.h"
 #include "distance_calc.h"
@@ -25,18 +26,6 @@ private:
   std::unordered_map<StopPair, Distance, StopPairHasher> _distances;
 };
 
-// TODO there's another separate entity, bus. Currently it's a string and it's
-// duplicated everywhere
-
-using Bus = std::string;
-using BusPtr = std::shared_ptr<Bus>;
-
-class BusStorage {
-private:
-  const std::set<Bus> _buses;
-};
-///////
-
 class Database {
 public:
   void ExecuteCommands(const std::vector<CommandPtr> &commands);
@@ -48,19 +37,18 @@ public:
   ResponsePtr ExecuteStopQuery(const StopQuery &query);
 
   std::optional<double> GetStopDistance(const std::string &first,
-                                        const std::string &second);
+                                        const std::string &second) const;
 
 private:
-  void AddDistances(StopPtr stop,
+  void AddDistances(StopId stop_id,
                     const std::unordered_map<std::string, double> &distances);
   void AddDistance(const StopPair &route, Distance distance);
 
+  BusStorage _bus;
   RouteStorage _route;
   StopStorage _stop;
   // DistanceStorage _distance;
 
-  // std::unordered_map<std::string, Route> _routes;
-  // std::unordered_map<std::string, StopPtr> _stops;
   std::unordered_map<StopPair, Distance, StopPairHasher> _distances;
 
   HelicopterDistanceCalculator _helicopter_dist{Planet::Earth, _stop};

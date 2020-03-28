@@ -14,21 +14,23 @@ void Database::ExecuteCommands(const std::vector<CommandPtr> &commands) {
 
 void Database::ExecuteBusCommand(const BusCommand &command) {
   const auto &bus_name = command.GetName();
-  _route.Add(bus_name, command.IsCircular(), command.GetStops());
-  for (const auto &stop_name : command.GetStops()) {
-    const auto &stop = _stop.GetOrAddUnqualified(stop_name);
-    stop->AddBus(bus_name);
+  vector<StopId> stop_ids = _stop.GetOrAddUnqualifiedBulk(command.GetStops());
+
+  _route.Add(bus_name, command.IsCircular(), stop_ids);
+  for (const auto &stop_id : stop_ids) {
+    _stop.Get(stop_id)->AddBus(bus_name);
   }
 }
 
 void Database::ExecuteStopCommand(const StopCommand &command) {
   const auto &stop_name = command.GetName();
-  const auto &stop_ptr =
+  const auto &stop_id =
       _stop.AddQualifiedStop(stop_name, command.GetLocation());
-  for (const auto &bus_name : _route.GetBusesByStop(stop_name)) {
+  const auto stop_ptr = _stop.Get(stop_id);
+  for (const auto &bus_name : _route.GetBusesByStop(stop_id)) {
     stop_ptr->AddBus(bus_name);
   }
-  AddDistances(stop_ptr, command.GetDistances());
+  AddDistances(stop_id, command.GetDistances());
 }
 
 void Database::AddDistance(const StopPair &route, Distance distance) {
@@ -44,12 +46,12 @@ void Database::AddDistance(const StopPair &route, Distance distance) {
   }
 }
 
-void Database::AddDistances(StopPtr stop,
+void Database::AddDistances(StopId stop_id,
                             const unordered_map<string, double> &distances) {
   for (const auto &[other_name, distance] : distances) {
-    const auto &other = _stop.GetOrAddUnqualified(other_name);
-    AddDistance({stop->GetName(), other->GetName()}, {distance, false});
-    AddDistance({other->GetName(), stop->GetName()}, {distance, true});
+    auto other_id = _stop.GetOrAddUnqualified(other_name);
+    AddDistance({stop_id, other_id}, {distance, false});
+    AddDistance({other_id, stop_id}, {distance, true});
   }
 }
 
@@ -70,7 +72,7 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
   if (const auto &route = _route.TryGet(bus_name); route != nullopt) {
     FoundBusResponse response;
     response.bus_number = bus_name;
-    response.num_stops = route->GetStopNames().size();
+    response.num_stops = route->GetStopIds().size();
     response.num_unique_stops = route->UniqueStops().size();
     response.length = _given_dist.Calculate(*route);
     response.curvature = response.length / _helicopter_dist.Calculate(*route);
@@ -82,7 +84,7 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
 
 ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
   auto stop_name = query.GetName();
-  if (const auto &stop = _stop.TryGet(stop_name); stop != nullptr) {
+  if (const auto &stop = _stop.TryGetByName(stop_name); stop != nullptr) {
     FoundStopResponse response;
     response.stop_name = stop->GetName();
     response.bus_names = stop->GetUniqueBusNames();
@@ -92,13 +94,14 @@ ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
   }
 }
 
-optional<double> Database::GetStopDistance(const string &first,
-                                           const string &second) {
-  const auto first_ptr = _stop.TryGet(first);
-  const auto second_ptr = _stop.TryGet(second);
-  if (first_ptr == nullptr || second_ptr == nullptr) {
+optional<double> Database::GetStopDistance(const std::string &first,
+                                           const std::string &second) const {
+  auto first_id = _stop.TryFindIdByName(first);
+  auto second_id = _stop.TryFindIdByName(second);
+
+  if (first_id == nullopt || second_id == nullopt) {
     return nullopt;
   }
 
-  return _distances.at({first_ptr->GetName(), second_ptr->GetName()});
-}
+  return _distances.at({*first_id, *second_id}).distance;
+};

@@ -3,15 +3,15 @@
 using namespace std;
 
 void RouteStorage::Add(const string &bus_name, bool is_circular,
-                       const vector<string> &stop_names) {
+                       const vector<StopId> &stop_names) {
   _routes.insert({bus_name, {is_circular, stop_names}});
 }
 
-vector<string> RouteStorage::GetBusesByStop(const string &stop_name) {
+vector<string> RouteStorage::GetBusesByStop(const StopId &stop_id) {
   vector<string> res;
 
   for (const auto &[bus_name, route] : _routes) {
-    if (route.UniqueStops().count(stop_name)) {
+    if (route.UniqueStops().count(stop_id)) {
       res.push_back(bus_name);
     }
   }

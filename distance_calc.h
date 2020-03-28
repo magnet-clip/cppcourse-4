@@ -15,20 +15,20 @@ template <class T> struct DistanceCalculator {
 
     std::optional<T> prev = std::nullopt;
     std::optional<T> current = std::nullopt;
-    for (const auto next_stop_name : route.GetStopNames()) {
+    for (const auto next_stop_id : route.GetStopIds()) {
       if (prev && current) {
         res += GetDistance(*prev, *current);
       }
       prev = current;
-      current = GetCurrent(next_stop_name);
+      current = GetCurrent(next_stop_id);
     }
     res += GetDistance(*prev, *current);
     return res;
   }
 
 protected:
-  virtual double GetDistance(const T &a, const T &b) const = 0;
-  virtual const T &GetCurrent(const std::string &stop_name) const = 0;
+  virtual double GetDistance(T a, T b) const = 0;
+  virtual T GetCurrent(StopId stop_id) const = 0;
 };
 
 class HelicopterDistanceCalculator : public DistanceCalculator<GeoPoint> {
@@ -37,14 +37,12 @@ public:
       : _planet(planet), _stops(stops) {}
 
 protected:
-  virtual double GetDistance(const GeoPoint &a,
-                             const GeoPoint &b) const override {
+  virtual double GetDistance(GeoPoint a, GeoPoint b) const override {
     return _planet.Distance(a, b);
   }
 
-  virtual const GeoPoint &
-  GetCurrent(const std::string &stop_name) const override {
-    return _stops.TryGet(stop_name)->GetLocation();
+  virtual GeoPoint GetCurrent(StopId stop_id) const override {
+    return _stops.Get(stop_id)->GetLocation();
   }
 
 private:
@@ -52,20 +50,16 @@ private:
   const StopStorage &_stops;
 };
 
-class GivenDistanceCalculator : public DistanceCalculator<std::string> {
+class GivenDistanceCalculator : public DistanceCalculator<StopId> {
 public:
   GivenDistanceCalculator(
       const std::unordered_map<StopPair, Distance, StopPairHasher> *distances)
       : _distances(distances) {}
 
 protected:
-  virtual const std::string &
-  GetCurrent(const std::string &stop_name) const override {
-    return stop_name;
-  }
+  virtual StopId GetCurrent(StopId stop_id) const override { return stop_id; }
 
-  virtual double GetDistance(const std::string &a,
-                             const std::string &b) const override {
+  virtual double GetDistance(StopId a, StopId b) const override {
     return _distances->at({a, b}).distance;
   }
 

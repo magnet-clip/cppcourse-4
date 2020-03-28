@@ -1,16 +1,18 @@
 #pragma once
 
 #include "geomath.h"
+#include "id.h"
+
 #include <set>
 #include <vector>
 
 class Route {
 public:
-  Route(bool circular, std::vector<std::string> stops);
-  const std::vector<std::string> GetStopNames() const { return _stop_names; };
-  const std::set<std::string> &UniqueStops() const { return _unique_stops; }
+  Route(bool circular, std::vector<StopId> stops);
+  const std::vector<StopId> GetStopIds() const { return _stops; };
+  const std::set<StopId> &UniqueStops() const { return _unique_stops; }
 
 private:
-  std::vector<std::string> _stop_names;
-  std::set<std::string> _unique_stops;
+  std::vector<StopId> _stops;
+  std::set<StopId> _unique_stops;
 };

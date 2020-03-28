@@ -1,24 +1,18 @@
 #pragma once
 
+#include "id.h"
 #include "route.h"
 
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-// Route contains stops, and currently I store strings instead of
-// references to stops. That's duplication and source of inconsistency
-// TODO refactor route to store StopPtr's.
-// TODO should I WeakPtrs maybe???
-// TODO stop can be given a unique id instead of string name
 class RouteStorage {
 public:
-  // TODO switch to StopPtrs / stop_ids instead of names
   void Add(const std::string &bus_name, bool is_circular,
-           const std::vector<std::string> &stop_names);
+           const std::vector<StopId> &stops);
 
-  // TODO switch to StopPtrs / stop_ids instead of names
-  std::vector<std::string> GetBusesByStop(const std::string &stop_name);
+  std::vector<std::string> GetBusesByStop(const StopId &stop_id);
 
   std::optional<Route> TryGet(const std::string &bus_name);
 
