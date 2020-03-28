@@ -30,29 +30,11 @@ void Database::ExecuteStopCommand(const StopCommand &command) {
   for (const auto &bus_name : _route.GetBusesByStop(stop_id)) {
     stop_ptr->AddBus(bus_name);
   }
-  AddDistances(stop_id, command.GetDistances());
-}
-
-void Database::AddDistance(const StopPair &route, Distance distance) {
-  if (_distances.count(route)) {
-    auto &existing = _distances.at(route);
-    if (!distance.implicit && existing.implicit) {
-      existing = distance;
-    } else if (!distance.implicit && !existing.implicit) {
-      throw domain_error("There's already an explicit distance");
-    }
-  } else {
-    _distances.insert({route, distance});
+  vector<pair<StopId, double>> distances;
+  for (const auto &[other_name, distance] : command.GetDistances()) {
+    distances.push_back({_stop.GetOrAddUnqualified(other_name), distance});
   }
-}
-
-void Database::AddDistances(StopId stop_id,
-                            const unordered_map<string, double> &distances) {
-  for (const auto &[other_name, distance] : distances) {
-    auto other_id = _stop.GetOrAddUnqualified(other_name);
-    AddDistance({stop_id, other_id}, {distance, false});
-    AddDistance({other_id, stop_id}, {distance, true});
-  }
+  _distance.AddDistances(stop_id, distances);
 }
 
 vector<ResponsePtr> Database::ExecuteQueries(const vector<QueryPtr> &queries) {
@@ -103,5 +85,5 @@ optional<double> Database::GetStopDistance(const std::string &first,
     return nullopt;
   }
 
-  return _distances.at({*first_id, *second_id}).distance;
+  return _distance.Get({*first_id, *second_id});
 };

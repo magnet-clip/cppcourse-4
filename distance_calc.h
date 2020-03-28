@@ -1,6 +1,7 @@
 #pragma once
 
 #include "distance.h"
+#include "distance_storage.h"
 #include "geomath.h"
 #include "route.h"
 #include "stop.h"
@@ -52,17 +53,16 @@ private:
 
 class GivenDistanceCalculator : public DistanceCalculator<StopId> {
 public:
-  GivenDistanceCalculator(
-      const std::unordered_map<StopPair, Distance, StopPairHasher> *distances)
+  GivenDistanceCalculator(const DistanceStorage &distances)
       : _distances(distances) {}
 
 protected:
   virtual StopId GetCurrent(StopId stop_id) const override { return stop_id; }
 
   virtual double GetDistance(StopId a, StopId b) const override {
-    return _distances->at({a, b}).distance;
+    return _distances.Get({a, b});
   }
 
 private:
-  const std::unordered_map<StopPair, Distance, StopPairHasher> *_distances;
+  const DistanceStorage &_distances;
 };

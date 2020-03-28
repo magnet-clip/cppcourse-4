@@ -4,6 +4,7 @@
 #include "command.h"
 #include "distance.h"
 #include "distance_calc.h"
+#include "distance_storage.h"
 #include "geomath.h"
 #include "query.h"
 #include "response.h"
@@ -13,18 +14,7 @@
 #include "stop_storage.h"
 
 #include <memory>
-#include <unordered_map>
 #include <vector>
-
-class DistanceStorage {
-public:
-  void AddDistances(StopPtr stop,
-                    const std::unordered_map<std::string, double> &distances);
-  void AddDistance(const StopPair &route, Distance distance);
-
-private:
-  std::unordered_map<StopPair, Distance, StopPairHasher> _distances;
-};
 
 class Database {
 public:
@@ -40,17 +30,11 @@ public:
                                         const std::string &second) const;
 
 private:
-  void AddDistances(StopId stop_id,
-                    const std::unordered_map<std::string, double> &distances);
-  void AddDistance(const StopPair &route, Distance distance);
-
   BusStorage _bus;
   RouteStorage _route;
   StopStorage _stop;
-  // DistanceStorage _distance;
-
-  std::unordered_map<StopPair, Distance, StopPairHasher> _distances;
+  DistanceStorage _distance;
 
   HelicopterDistanceCalculator _helicopter_dist{Planet::Earth, _stop};
-  GivenDistanceCalculator _given_dist{&_distances};
+  GivenDistanceCalculator _given_dist{_distance};
 };
