@@ -4,6 +4,7 @@
 #include "geomath.h"
 #include "route.h"
 #include "stop.h"
+#include "stop_storage.h"
 
 #include <string>
 #include <unordered_map>
@@ -32,8 +33,7 @@ protected:
 
 class HelicopterDistanceCalculator : public DistanceCalculator<GeoPoint> {
 public:
-  HelicopterDistanceCalculator(const Planet &planet,
-                               std::unordered_map<std::string, StopPtr> *stops)
+  HelicopterDistanceCalculator(const Planet &planet, const StopStorage &stops)
       : _planet(planet), _stops(stops) {}
 
 protected:
@@ -44,12 +44,12 @@ protected:
 
   virtual const GeoPoint &
   GetCurrent(const std::string &stop_name) const override {
-    return _stops->at(stop_name)->GetLocation();
+    return _stops.TryGet(stop_name)->GetLocation();
   }
 
 private:
   const Planet &_planet;
-  const std::unordered_map<std::string, StopPtr> *_stops;
+  const StopStorage &_stops;
 };
 
 class GivenDistanceCalculator : public DistanceCalculator<std::string> {

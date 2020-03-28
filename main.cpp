@@ -21,7 +21,7 @@ void RunAllTests() {
 }
 
 int main() {
-  RunAllTests();
+  // RunAllTests();
   auto commands = ReadCommands();
   auto queries = ReadQueries();
 

@@ -7,21 +7,13 @@
 #include "query.h"
 #include "response.h"
 #include "route.h"
+#include "route_storage.h"
 #include "stop.h"
+#include "stop_storage.h"
 
 #include <memory>
 #include <unordered_map>
 #include <vector>
-
-class RouteStorage {
-public:
-private:
-  std::unordered_map<std::string, Route> _routes;
-};
-
-class StopsStorage {
-  std::unordered_map<std::string, StopPtr> _stops;
-};
 
 class DistanceStorage {
 public:
@@ -32,6 +24,18 @@ public:
 private:
   std::unordered_map<StopPair, Distance, StopPairHasher> _distances;
 };
+
+// TODO there's another separate entity, bus. Currently it's a string and it's
+// duplicated everywhere
+
+using Bus = std::string;
+using BusPtr = std::shared_ptr<Bus>;
+
+class BusStorage {
+private:
+  const std::set<Bus> _buses;
+};
+///////
 
 class Database {
 public:
@@ -51,10 +55,14 @@ private:
                     const std::unordered_map<std::string, double> &distances);
   void AddDistance(const StopPair &route, Distance distance);
 
-  std::unordered_map<std::string, Route> _routes;
-  std::unordered_map<std::string, StopPtr> _stops;
+  RouteStorage _route;
+  StopStorage _stop;
+  // DistanceStorage _distance;
+
+  // std::unordered_map<std::string, Route> _routes;
+  // std::unordered_map<std::string, StopPtr> _stops;
   std::unordered_map<StopPair, Distance, StopPairHasher> _distances;
 
-  HelicopterDistanceCalculator _helicopter_dist{Planet::Earth, &_stops};
+  HelicopterDistanceCalculator _helicopter_dist{Planet::Earth, _stop};
   GivenDistanceCalculator _given_dist{&_distances};
 };

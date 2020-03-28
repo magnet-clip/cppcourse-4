@@ -13,27 +13,20 @@ void Database::ExecuteCommands(const std::vector<CommandPtr> &commands) {
 }
 
 void Database::ExecuteBusCommand(const BusCommand &command) {
-  // cout << command.ToString() << endl;
   const auto &bus_name = command.GetName();
-  _routes.insert({bus_name, {command.IsCircular(), command.GetStops()}});
-  for (const auto &stop : command.GetStops()) {
-    if (!_stops.count(stop)) {
-      _stops.insert({stop, make_shared<Stop>(stop)});
-    }
-    _stops[stop]->AddBus(bus_name);
+  _route.Add(bus_name, command.IsCircular(), command.GetStops());
+  for (const auto &stop_name : command.GetStops()) {
+    const auto &stop = _stop.GetOrAddUnqualified(stop_name);
+    stop->AddBus(bus_name);
   }
 }
 
 void Database::ExecuteStopCommand(const StopCommand &command) {
   const auto &stop_name = command.GetName();
-  const auto stop_ptr =
-      make_shared<QualifiedStop>(stop_name, command.GetLocation());
-  _stops[stop_name] = stop_ptr;
-
-  for (const auto &[bus_name, route] : _routes) {
-    if (route.UniqueStops().count(stop_name)) {
-      stop_ptr->AddBus(bus_name);
-    }
+  const auto &stop_ptr =
+      _stop.AddQualifiedStop(stop_name, command.GetLocation());
+  for (const auto &bus_name : _route.GetBusesByStop(stop_name)) {
+    stop_ptr->AddBus(bus_name);
   }
   AddDistances(stop_ptr, command.GetDistances());
 }
@@ -54,11 +47,7 @@ void Database::AddDistance(const StopPair &route, Distance distance) {
 void Database::AddDistances(StopPtr stop,
                             const unordered_map<string, double> &distances) {
   for (const auto &[other_name, distance] : distances) {
-    if (!_stops.count(other_name)) {
-      _stops.insert({other_name, make_shared<Stop>(other_name)});
-    }
-    const auto &other = _stops[other_name];
-
+    const auto &other = _stop.GetOrAddUnqualified(other_name);
     AddDistance({stop->GetName(), other->GetName()}, {distance, false});
     AddDistance({other->GetName(), stop->GetName()}, {distance, true});
   }
@@ -77,28 +66,23 @@ vector<ResponsePtr> Database::ExecuteQueries(const vector<QueryPtr> &queries) {
 }
 
 ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
-  auto number = query.GetNumber();
-  if (_routes.count(number)) {
+  const auto bus_name = query.GetNumber();
+  if (const auto &route = _route.TryGet(bus_name); route != nullopt) {
     FoundBusResponse response;
-    auto &route = _routes.at(number);
-
-    response.bus_number = number;
-    response.num_stops = route.GetStopNames().size();
-    response.num_unique_stops = route.UniqueStops().size();
-    response.length = _given_dist.Calculate(route);
-    response.curvature = response.length / _helicopter_dist.Calculate(route);
-
+    response.bus_number = bus_name;
+    response.num_stops = route->GetStopNames().size();
+    response.num_unique_stops = route->UniqueStops().size();
+    response.length = _given_dist.Calculate(*route);
+    response.curvature = response.length / _helicopter_dist.Calculate(*route);
     return make_shared<FoundBusResponse>(response);
   } else {
-    return make_shared<NoBusResponse>(number);
+    return make_shared<NoBusResponse>(bus_name);
   }
 }
 
 ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
   auto stop_name = query.GetName();
-  if (_stops.count(stop_name)) {
-    const auto &stop = _stops.at(stop_name);
-
+  if (const auto &stop = _stop.TryGet(stop_name); stop != nullptr) {
     FoundStopResponse response;
     response.stop_name = stop->GetName();
     response.bus_names = stop->GetUniqueBusNames();
@@ -110,10 +94,11 @@ ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
 
 optional<double> Database::GetStopDistance(const string &first,
                                            const string &second) {
-  if (!_stops.count(first) || !_stops.count(second)) {
+  const auto first_ptr = _stop.TryGet(first);
+  const auto second_ptr = _stop.TryGet(second);
+  if (first_ptr == nullptr || second_ptr == nullptr) {
     return nullopt;
   }
 
-  return _distances.at(
-      {_stops.at(first)->GetName(), _stops.at(second)->GetName()});
+  return _distances.at({first_ptr->GetName(), second_ptr->GetName()});
 }
