@@ -8,13 +8,12 @@
 #include <vector>
 
 struct Commands {
-  static std::string StopCommand;
-  static std::string BusCommand;
+  static constexpr char const *StopCommand = "Stop";
+  static constexpr char const *BusCommand = "Bus";
 };
 
 struct Command {
   virtual std::string Kind() const = 0;
-  virtual bool operator==(const Command &other) const = 0;
 };
 
 using CommandPtr = std::shared_ptr<Command>;
@@ -25,7 +24,6 @@ class StopCommand : public Command {
 
 public:
   virtual std::string Kind() const override { return Commands::StopCommand; }
-  virtual bool operator==(const Command &other) const override;
 
   const std::string &GetName() const { return _name; }
   GeoPoint GetLocation() const { return _location; }
@@ -73,7 +71,6 @@ class BusCommand : public Command {
 
 public:
   virtual std::string Kind() const override { return Commands::BusCommand; }
-  virtual bool operator==(const Command &other) const override;
 
   const std::string &GetName() const { return _name; }
   const std::vector<std::string> &GetStops() const { return _stops; };

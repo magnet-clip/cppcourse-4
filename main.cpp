@@ -1,9 +1,8 @@
-#include "command.test.h"
 #include "database.test.h"
 #include "geomath.test.h"
 #include "io.h"
 #include "parser.h"
-#include "query.test.h"
+#include "parser.test.h"
 #include "serializer.h"
 #include "test_runner.h"
 

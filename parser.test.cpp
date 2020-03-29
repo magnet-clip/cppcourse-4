@@ -1,8 +1,9 @@
-#include "command.test.h"
+#include "parser.test.h"
 #include "command.h"
 #include "geomath.h"
 #include "io.h"
 #include "parser.h"
+#include "query.h"
 #include "test_runner.h"
 
 #include <sstream>
@@ -130,5 +131,32 @@ void TestStopCommandParsingExtended() {
     ASSERT_EQUAL(distances.at("Rossoshanskaya ulitsa"), 7500.0);
     ASSERT_EQUAL(distances.at("Biryusinka"), 1800.0);
     ASSERT_EQUAL(distances.at("Universam"), 2400.0);
+  }
+}
+
+void TestBusQueryParsing() {
+  stringstream cmd_stream;
+  cmd_stream << "3" << endl
+             << "Bus 256" << endl
+             << "Bus 750" << endl
+             << "Bus 751" << endl;
+
+  auto res = ReadQueries(cmd_stream, StringParser());
+  ASSERT_EQUAL(res.size(), 3U);
+
+  {
+    ASSERT_EQUAL(res[0]->Kind(), Queries::BusQuery);
+    auto bus = static_cast<BusQuery &>(*res[0]);
+    ASSERT_EQUAL(bus.GetName(), "256");
+  }
+  {
+    ASSERT_EQUAL(res[1]->Kind(), Queries::BusQuery);
+    auto bus = static_cast<BusQuery &>(*res[1]);
+    ASSERT_EQUAL(bus.GetName(), "750");
+  }
+  {
+    ASSERT_EQUAL(res[2]->Kind(), Queries::BusQuery);
+    auto bus = static_cast<BusQuery &>(*res[2]);
+    ASSERT_EQUAL(bus.GetName(), "751");
   }
 }
