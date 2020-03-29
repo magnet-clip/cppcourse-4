@@ -7,27 +7,22 @@ using namespace std;
 
 string Serializer::Serialize(ResponsePtr response) const {
   if (response->Kind() == Responses::FoundBusResponse) {
-    return Serialize(
-        static_cast<const FoundBusResponse &>(*response));
+    return Serialize(static_cast<const FoundBusResponse &>(*response));
   } else if (response->Kind() == Responses::NoBusResponse) {
-    return Serialize(
-        static_cast<const NoBusResponse &>(*response));
+    return Serialize(static_cast<const NoBusResponse &>(*response));
   } else if (response->Kind() == Responses::FoundStopResponse) {
-    return Serialize(
-        static_cast<const FoundStopResponse &>(*response));
+    return Serialize(static_cast<const FoundStopResponse &>(*response));
   } else if (response->Kind() == Responses::NoStopResponse) {
     return Serialize(static_cast<const NoStopResponse &>(*response));
   }
 }
 
-string
-StringSerializer::Serialize(const NoBusResponse &response) const {
+string StringSerializer::Serialize(const NoBusResponse &response) const {
   ostringstream os;
   os << "Bus " << response.bus_number << ": not found";
   return os.str();
 }
-string StringSerializer::Serialize(
-    const FoundBusResponse &response) const {
+string StringSerializer::Serialize(const FoundBusResponse &response) const {
   ostringstream os;
   os.precision(7);
   os << "Bus " << response.bus_number << ": " << response.num_stops
@@ -37,15 +32,13 @@ string StringSerializer::Serialize(
   return os.str();
 }
 
-string StringSerializer::Serialize(
-    const NoStopResponse &response) const {
+string StringSerializer::Serialize(const NoStopResponse &response) const {
   ostringstream os;
   os << "Stop " << response.stop_name << ": not found";
   return os.str();
 }
 
-string StringSerializer::Serialize(
-    const FoundStopResponse &response) const {
+string StringSerializer::Serialize(const FoundStopResponse &response) const {
   ostringstream os;
   os << "Stop " << response.stop_name << ": ";
   if (response.bus_names.size() == 0) {
@@ -59,10 +52,7 @@ string StringSerializer::Serialize(
   return os.str();
 }
 
-string 
-JsonSerializer::Serialize(const NoBusResponse &response) const {}
-string JsonSerializer::Serialize(
-    const FoundBusResponse &response) const {}
-string 
-JsonSerializer::Serialize(const NoStopResponse &response) const {}
+string JsonSerializer::Serialize(const NoBusResponse &response) const {}
+string JsonSerializer::Serialize(const FoundBusResponse &response) const {}
+string JsonSerializer::Serialize(const NoStopResponse &response) const {}
 string JsonSerializer::Serialize(const FoundStopResponse &response) const {}
