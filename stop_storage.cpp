@@ -49,7 +49,7 @@ optional<StopId> StopStorage::TryFindIdByName(const string &stop_name) const {
   return nullopt;
 }
 
-StopPtr StopStorage::TryGetByName(const string &stop_name) const {
+StopPtr StopStorage::TryFindByName(const string &stop_name) const {
   const auto it = _stop_ids.find(stop_name);
   if (it != _stop_ids.end()) {
     return _stops[it->second];

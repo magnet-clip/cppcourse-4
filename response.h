@@ -13,7 +13,6 @@ struct Responses {
 
 struct Response {
   virtual std::string Kind() const = 0;
-  virtual std::string ToString() const = 0;
 };
 
 using ResponsePtr = std::shared_ptr<Response>;
@@ -21,7 +20,6 @@ using ResponsePtr = std::shared_ptr<Response>;
 struct BusResponse : public Response {
   std::string bus_number;
   virtual std::string Kind() const = 0;
-  virtual std::string ToString() const = 0;
 };
 
 struct FoundBusResponse : public BusResponse {
@@ -33,19 +31,16 @@ struct FoundBusResponse : public BusResponse {
   virtual std::string Kind() const override {
     return Responses::FoundBusResponse;
   }
-  virtual std::string ToString() const override;
 };
 
 struct NoBusResponse : public BusResponse {
   NoBusResponse(std::string number) { bus_number = number; }
   virtual std::string Kind() const override { return Responses::NoBusResponse; }
-  virtual std::string ToString() const override;
 };
 
 struct StopResponse : public Response {
   std::string stop_name;
   virtual std::string Kind() const = 0;
-  virtual std::string ToString() const = 0;
 };
 
 struct FoundStopResponse : public StopResponse {
@@ -54,7 +49,6 @@ struct FoundStopResponse : public StopResponse {
   virtual std::string Kind() const override {
     return Responses::FoundStopResponse;
   }
-  virtual std::string ToString() const override;
 };
 
 struct NoStopResponse : public StopResponse {
@@ -62,5 +56,4 @@ struct NoStopResponse : public StopResponse {
   virtual std::string Kind() const override {
     return Responses::NoStopResponse;
   }
-  virtual std::string ToString() const override;
 };

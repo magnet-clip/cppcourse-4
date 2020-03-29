@@ -1,5 +1,6 @@
 #include "database.test.h"
 #include "database.h"
+#include "serializer.h"
 #include "test_runner.h"
 
 #include <sstream>
@@ -68,11 +69,11 @@ void TestSample3() {
   DISTANCE("Biryulyovo Zapadnoye", "Biryusinka", 1800.0);
   DISTANCE("Biryulyovo Zapadnoye", "Universam", 2400.0);
   DISTANCE("Biryusinka", "Universam", 750.0);
-
+  const Serializer &serializer = StringSerializer();
   auto responses = db.ExecuteQueries(queries);
   vector<string> res;
   for (const auto &response : responses) {
-    res.push_back(response->ToString());
+    res.push_back(serializer.Serialize(response));
   }
   ASSERT_EQUAL(res, expected);
 }

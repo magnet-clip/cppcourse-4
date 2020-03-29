@@ -1,13 +1,11 @@
+#include "main.h"
 #include "command.h"
 #include "command.test.h"
-#include "database.h"
 #include "database.test.h"
 #include "geomath.test.h"
-#include "query.h"
 #include "query.test.h"
 #include "test_runner.h"
 
-#include <iostream>
 using namespace std;
 
 void RunAllTests() {
@@ -20,16 +18,11 @@ void RunAllTests() {
   RUN_TEST(tr, TestSample3);
 }
 
+void InAndOut(istream &is = cin, ostream &os = cout,
+              const Serializer &serializer = JsonSerializer());
+
 int main() {
   RunAllTests();
-  auto commands = ReadCommands();
-  auto queries = ReadQueries();
-
-  Database db;
-  db.ExecuteCommands(commands);
-  auto res = db.ExecuteQueries(queries);
-  for (const auto &out : res) {
-    cout << out->ToString() << endl;
-  }
+  InAndOut(cin, cout, StringSerializer());
   return 0;
 }

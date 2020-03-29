@@ -71,7 +71,7 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
 
 ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
   auto stop_name = query.GetName();
-  if (const auto &stop = _stop.TryGetByName(stop_name); stop != nullptr) {
+  if (const auto &stop = _stop.TryFindByName(stop_name); stop != nullptr) {
     FoundStopResponse response;
     response.stop_name = stop->GetName();
     response.bus_names = _bus.GetBusNames(stop->GetUniqueBuses());
