@@ -12,27 +12,15 @@ struct Queries {
 
 struct Query {
   virtual std::string Kind() const = 0;
-  virtual std::string ToString() const = 0;
   virtual bool operator==(const Query &other) const = 0;
 };
 
+using QueryPtr = std::shared_ptr<Query>;
+
 class BusQuery : public Query {
 public:
-  BusQuery(std::string_view line);
+  BusQuery(const std::string &name) : _name(name) {}
   virtual std::string Kind() const override { return Queries::BusQuery; };
-  virtual std::string ToString() const override;
-  virtual bool operator==(const Query &other) const override;
-  std::string GetNumber() const { return _number; }
-
-private:
-  std::string _number;
-};
-
-class StopQuery : public Query {
-public:
-  StopQuery(std::string_view line);
-  virtual std::string Kind() const override { return Queries::StopQuery; };
-  virtual std::string ToString() const override;
   virtual bool operator==(const Query &other) const override;
   std::string GetName() const { return _name; }
 
@@ -40,5 +28,13 @@ private:
   std::string _name;
 };
 
-using QueryPtr = std::shared_ptr<Query>;
-std::vector<QueryPtr> ReadQueries(std::istream &is = std::cin);
+class StopQuery : public Query {
+public:
+  StopQuery(const std::string &name) : _name(name) {}
+  virtual std::string Kind() const override { return Queries::StopQuery; };
+  virtual bool operator==(const Query &other) const override;
+  std::string GetName() const { return _name; }
+
+private:
+  std::string _name;
+};

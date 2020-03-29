@@ -51,7 +51,7 @@ vector<ResponsePtr> Database::ExecuteQueries(const vector<QueryPtr> &queries) {
 }
 
 ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
-  const auto bus_name = query.GetNumber();
+  const auto bus_name = query.GetName();
 
   if (auto bus_id = _bus.TryFind(bus_name); bus_id != nullopt) {
     const auto &route = _route.Get(*bus_id);

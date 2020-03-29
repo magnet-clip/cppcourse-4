@@ -1,9 +1,10 @@
-#include "main.h"
-#include "command.h"
 #include "command.test.h"
 #include "database.test.h"
 #include "geomath.test.h"
+#include "io.h"
+#include "parser.h"
 #include "query.test.h"
+#include "serializer.h"
 #include "test_runner.h"
 
 using namespace std;
@@ -18,11 +19,8 @@ void RunAllTests() {
   RUN_TEST(tr, TestSample3);
 }
 
-void InAndOut(istream &is = cin, ostream &os = cout,
-              const Serializer &serializer = JsonSerializer());
-
 int main() {
   RunAllTests();
-  InAndOut(cin, cout, StringSerializer());
+  InAndOut(cin, cout, StringSerializer(), StringParser());
   return 0;
 }

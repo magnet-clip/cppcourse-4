@@ -1,4 +1,5 @@
 #include "query.test.h"
+#include "io.h"
 #include "query.h"
 #include "test_runner.h"
 
@@ -11,22 +12,22 @@ void TestBusQueryParsing() {
              << "Bus 750" << endl
              << "Bus 751" << endl;
 
-  auto res = ReadQueries(cmd_stream);
+  auto res = ReadQueries(cmd_stream, StringParser());
   ASSERT_EQUAL(res.size(), 3U);
 
   {
     ASSERT_EQUAL(res[0]->Kind(), Queries::BusQuery);
     auto bus = static_cast<BusQuery &>(*res[0]);
-    ASSERT_EQUAL(bus.GetNumber(), "256");
+    ASSERT_EQUAL(bus.GetName(), "256");
   }
   {
     ASSERT_EQUAL(res[1]->Kind(), Queries::BusQuery);
     auto bus = static_cast<BusQuery &>(*res[1]);
-    ASSERT_EQUAL(bus.GetNumber(), "750");
+    ASSERT_EQUAL(bus.GetName(), "750");
   }
   {
     ASSERT_EQUAL(res[2]->Kind(), Queries::BusQuery);
     auto bus = static_cast<BusQuery &>(*res[2]);
-    ASSERT_EQUAL(bus.GetNumber(), "751");
+    ASSERT_EQUAL(bus.GetName(), "751");
   }
 }

@@ -1,5 +1,6 @@
 #include "database.test.h"
 #include "database.h"
+#include "io.h"
 #include "serializer.h"
 #include "test_runner.h"
 
@@ -57,8 +58,8 @@ void TestSample3() {
       "Stop Prazhskaya: no buses",
       "Stop Biryulyovo Zapadnoye: buses 256 828",
   };
-  auto commands = ReadCommands(s);
-  auto queries = ReadQueries(s);
+  auto commands = ReadCommands(s, StringParser());
+  auto queries = ReadQueries(s, StringParser());
 
   Database db;
   db.ExecuteCommands(commands);
