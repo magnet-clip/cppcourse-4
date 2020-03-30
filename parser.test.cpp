@@ -11,25 +11,96 @@
 
 using namespace std;
 
-void TestJsonStopParsing() {
-  stringstream s;
-  s << "{\"type\":\"Stop\",\"road_distances\":{\"Marushkino\":3900},"
-       "\"longitude\":37.20829,\"name\":\"Tolstopaltsevo\","
-       "\"latitude\":55.611087}";
-  JsonIo io;
-  auto cmd = io.ReadCommand(s);
-  ASSERT_EQUAL(cmd->Kind(), Commands::StopCommand);
-  auto &cmd_stop = static_cast<StopCommand &>(*cmd);
-  GeoPoint expected{Latitude(55.611087), Longitude(37.20829)};
-  ASSERT_EQUAL(cmd_stop.GetName(), "Tolstopaltsevo");
-  ASSERT(fabs(cmd_stop.GetLocation().GetLatitude() - expected.GetLatitude()) <
-         0.000001);
-  ASSERT(fabs(cmd_stop.GetLocation().GetLongitude() - expected.GetLongitude()) <
-         0.000001);
+void TestJsonBusParsing() {
+  {
+    stringstream s;
+    s << "{\"type\":\"Bus\",\"name\":\"256\",\"stops\":[\"Biryulyovo "
+         "Zapadnoye\",\"Biryusinka\",\"Universam\",\"Biryulyovo "
+         "Tovarnaya\",\"Biryulyovo Passazhirskaya\",\"Biryulyovo "
+         "Zapadnoye\"],\"is_roundtrip\":true}";
+    JsonIo io;
+    auto cmd = io.ReadCommand(s);
+    ASSERT_EQUAL(cmd->Kind(), Commands::BusCommand);
+    auto &cmd_stop = static_cast<BusCommand &>(*cmd);
+    ASSERT_EQUAL(cmd_stop.GetName(), "256");
+    auto &stops = cmd_stop.GetStops();
+    ASSERT_EQUAL(stops.size(), 6UL);
+    ASSERT_EQUAL(cmd_stop.IsCircular(), true);
+  }
+  {
+    stringstream s;
+    s << "{\"type\":\"Bus\",\"name\":\"750\",\"stops\":[\"Tolstopaltsevo\","
+         "\"Marushkino\",\"Rasskazovka\"],\"is_roundtrip\":false}";
+    JsonIo io;
+    auto cmd = io.ReadCommand(s);
+    ASSERT_EQUAL(cmd->Kind(), Commands::BusCommand);
+    auto &cmd_stop = static_cast<BusCommand &>(*cmd);
+    ASSERT_EQUAL(cmd_stop.GetName(), "750");
+    auto &stops = cmd_stop.GetStops();
+    ASSERT_EQUAL(stops.size(), 3UL);
+    ASSERT_EQUAL(cmd_stop.IsCircular(), false);
+  }
+}
 
-  auto distances = cmd_stop.GetDistances();
-  ASSERT_EQUAL(distances.size(), 1UL);
-  ASSERT_EQUAL(distances.at("Marushkino"), 3900.0);
+void TestJsonStopParsing() {
+  {
+    stringstream s;
+    s << "{\"type\":\"Stop\",\"road_distances\":{\"Marushkino\":3900},"
+         "\"longitude\":37.20829,\"name\":\"Tolstopaltsevo\","
+         "\"latitude\":55.611087}";
+    JsonIo io;
+    auto cmd = io.ReadCommand(s);
+    ASSERT_EQUAL(cmd->Kind(), Commands::StopCommand);
+    auto &cmd_stop = static_cast<StopCommand &>(*cmd);
+    GeoPoint expected{Latitude(55.611087), Longitude(37.20829)};
+    ASSERT_EQUAL(cmd_stop.GetName(), "Tolstopaltsevo");
+    ASSERT(fabs(cmd_stop.GetLocation().GetLatitude() - expected.GetLatitude()) <
+           0.000001);
+    ASSERT(fabs(cmd_stop.GetLocation().GetLongitude() -
+                expected.GetLongitude()) < 0.000001);
+
+    auto distances = cmd_stop.GetDistances();
+    ASSERT_EQUAL(distances.size(), 1UL);
+    ASSERT_EQUAL(distances.at("Marushkino"), 3900.0);
+  }
+  {
+    stringstream s;
+    s << "{\"type\":\"Stop\",\"road_distances\":{\"Rasskazovka\":9900},"
+         "\"longitude\":37.209755,\"name\":\"Marushkino\",\"latitude\":55."
+         "595884}";
+    JsonIo io;
+    auto cmd = io.ReadCommand(s);
+    ASSERT_EQUAL(cmd->Kind(), Commands::StopCommand);
+    auto &cmd_stop = static_cast<StopCommand &>(*cmd);
+    GeoPoint expected{Latitude(55.595884), Longitude(37.209755)};
+    ASSERT_EQUAL(cmd_stop.GetName(), "Marushkino");
+    ASSERT(fabs(cmd_stop.GetLocation().GetLatitude() - expected.GetLatitude()) <
+           0.000001);
+    ASSERT(fabs(cmd_stop.GetLocation().GetLongitude() -
+                expected.GetLongitude()) < 0.000001);
+
+    auto distances = cmd_stop.GetDistances();
+    ASSERT_EQUAL(distances.size(), 1UL);
+    ASSERT_EQUAL(distances.at("Rasskazovka"), 9900.0);
+  }
+  {
+    stringstream s;
+    s << "{\"type\":\"Stop\",\"road_distances\":{},\"longitude\":37.605757,"
+         "\"name\":\"Rossoshanskaya ulitsa\",\"latitude\":55.595579}";
+    JsonIo io;
+    auto cmd = io.ReadCommand(s);
+    ASSERT_EQUAL(cmd->Kind(), Commands::StopCommand);
+    auto &cmd_stop = static_cast<StopCommand &>(*cmd);
+    GeoPoint expected{Latitude(55.595579), Longitude(37.605757)};
+    ASSERT_EQUAL(cmd_stop.GetName(), "Rossoshanskaya ulitsa");
+    ASSERT(fabs(cmd_stop.GetLocation().GetLatitude() - expected.GetLatitude()) <
+           0.000001);
+    ASSERT(fabs(cmd_stop.GetLocation().GetLongitude() -
+                expected.GetLongitude()) < 0.000001);
+
+    auto distances = cmd_stop.GetDistances();
+    ASSERT_EQUAL(distances.size(), 0UL);
+  }
 }
 
 void TestStopCommandParsing() {

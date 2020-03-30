@@ -135,7 +135,21 @@ StopQuery StringParser::ParseStopQuery() {
   return StopQuery(string(_line));
 }
 
-BusCommand JsonParser::ParseBusCommand() {}
+BusCommand JsonParser::ParseBusCommand() {
+  auto data = _node.AsMap();
+
+  BusCommandBuilder builder(data.at("name").AsString());
+
+  builder.SetIsCircular(data.at("is_roundtrip").AsBool());
+  if (data.count("stops")) {
+    auto stops = data.at("stops").AsArray();
+    for (const auto &name : stops) {
+      builder.AddStop(name.AsString());
+    }
+  }
+
+  return builder.Build();
+}
 
 StopCommand JsonParser::ParseStopCommand() {
   auto data = _node.AsMap();

@@ -5,3 +5,4 @@ void TestBusCommandParsing();
 void TestStopCommandParsingExtended();
 void TestBusQueryParsing();
 void TestJsonStopParsing();
+void TestJsonBusParsing();

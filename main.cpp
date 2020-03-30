@@ -15,6 +15,7 @@ void RunAllTests() {
   RUN_TEST(tr, TestBusQueryParsing);
   RUN_TEST(tr, TestSample3);
   RUN_TEST(tr, TestJsonStopParsing);
+  RUN_TEST(tr, TestJsonBusParsing);
 }
 
 int main() {

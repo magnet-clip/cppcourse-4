@@ -24,6 +24,20 @@ Node LoadArray(istream &input) {
   return Node(move(result));
 }
 
+Node LoadBool(istream &input) {
+  char c;
+  input >> c;
+  bool result = c == 't';
+
+  if (result) {
+    input.ignore(3);
+  } else {
+    input.ignore(4);
+  }
+
+  return Node(move(result));
+}
+
 Node LoadNumber(istream &input) {
   const int DIGIT_COUNT = 128;
   array<char, DIGIT_COUNT> digits;
@@ -105,9 +119,12 @@ Node LoadNode(istream &input) {
     return LoadDict(input);
   } else if (c == '"') {
     return LoadString(input);
-  } else {
+  } else if (c >= '0' && c <= '9') {
     input.putback(c);
     return LoadNumber(input);
+  } else {
+    input.putback(c);
+    return LoadBool(input);
   }
 }
 
@@ -120,6 +137,8 @@ string Node::ToString(int level) const {
     s << get<double>(*this);
   } else if (holds_alternative<int>(*this)) {
     s << get<int>(*this);
+  } else if (holds_alternative<bool>(*this)) {
+    s << (get<bool>(*this) ? "true" : "false");
   } else if (holds_alternative<string>(*this)) {
     s << "\"" << get<string>(*this) << "\"";
   } else if (holds_alternative<map<string, Node>>(*this)) {
