@@ -1,36 +1,43 @@
 #pragma once
 
 #include "command.h"
+#include "json.h"
 #include "query.h"
 
 #include <string>
 
 class Parser {
 public:
-  CommandPtr ParseCommand(const std::string& command_type,
-                          std::string_view line) const;
-  QueryPtr ParseQuery(const std::string &query_type,
-                      std::string_view line) const;
+  CommandPtr ParseCommand(const std::string &command_type);
+  QueryPtr ParseQuery(const std::string &query_type);
 
 private:
-  virtual BusCommand ParseBusCommand(std::string_view line) const = 0;
-  virtual StopCommand ParseStopCommand(std::string_view line) const = 0;
-  virtual BusQuery ParseBusQuery(std::string_view line) const = 0;
-  virtual StopQuery ParseStopQuery(std::string_view line) const = 0;
+  virtual BusCommand ParseBusCommand() = 0;
+  virtual StopCommand ParseStopCommand() = 0;
+  virtual BusQuery ParseBusQuery() = 0;
+  virtual StopQuery ParseStopQuery() = 0;
 };
 
 class StringParser : public Parser {
+public:
+  void SetLine(std::string_view line) { _line = line; }
+
 private:
-  virtual BusCommand ParseBusCommand(std::string_view line) const override;
-  virtual StopCommand ParseStopCommand(std::string_view line) const override;
-  virtual BusQuery ParseBusQuery(std::string_view line) const override;
-  virtual StopQuery ParseStopQuery(std::string_view line) const override;
+  std::string_view _line;
+  virtual BusCommand ParseBusCommand() override;
+  virtual StopCommand ParseStopCommand() override;
+  virtual BusQuery ParseBusQuery() override;
+  virtual StopQuery ParseStopQuery() override;
 };
 
 class JsonParser : public Parser {
+public:
+  void SetNode(const Json::Node &node) { _node = node; }
+
 private:
-  virtual BusCommand ParseBusCommand(std::string_view line) const override;
-  virtual StopCommand ParseStopCommand(std::string_view line) const override;
-  virtual BusQuery ParseBusQuery(std::string_view line) const override;
-  virtual StopQuery ParseStopQuery(std::string_view line) const override;
+  Json::Node _node;
+  virtual BusCommand ParseBusCommand() override;
+  virtual StopCommand ParseStopCommand() override;
+  virtual BusQuery ParseBusQuery() override;
+  virtual StopQuery ParseStopQuery() override;
 };

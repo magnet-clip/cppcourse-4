@@ -58,8 +58,9 @@ void TestSample3() {
       "Stop Prazhskaya: no buses",
       "Stop Biryulyovo Zapadnoye: buses 256 828",
   };
-  auto commands = ReadCommands(s, StringParser());
-  auto queries = ReadQueries(s, StringParser());
+  StringIo io;
+  auto commands = io.ReadCommands(s);
+  auto queries = io.ReadQueries(s);
 
   Database db;
   db.ExecuteCommands(commands);

@@ -1,23 +1,23 @@
 #include "parser.h"
+#include "json.h"
 #include "str_utils.h"
 
 using namespace std;
 
-CommandPtr Parser::ParseCommand(const string &command_type,
-                                string_view line) const {
+CommandPtr Parser::ParseCommand(const string &command_type) {
   if (command_type == Commands::StopCommand) {
-    return make_shared<StopCommand>(ParseStopCommand(line));
+    return make_shared<StopCommand>(ParseStopCommand());
   } else if (command_type == Commands::BusCommand) {
-    return make_shared<BusCommand>(ParseBusCommand(line));
+    return make_shared<BusCommand>(ParseBusCommand());
   }
   return nullptr;
 }
 
-QueryPtr Parser::ParseQuery(const string &query_type, string_view line) const {
+QueryPtr Parser::ParseQuery(const string &query_type) {
   if (query_type == Queries::BusQuery) {
-    return make_shared<BusQuery>(ParseBusQuery(line));
+    return make_shared<BusQuery>(ParseBusQuery());
   } else if (query_type == Queries::StopQuery) {
-    return make_shared<StopQuery>(ParseStopQuery(line));
+    return make_shared<StopQuery>(ParseStopQuery());
   }
   return nullptr;
 }
@@ -31,35 +31,35 @@ string ReadName(string_view &line) {
   return name;
 }
 
-BusCommand StringParser::ParseBusCommand(string_view line) const {
-  BusCommandBuilder builder(ReadName(line));
+BusCommand StringParser::ParseBusCommand() {
+  BusCommandBuilder builder(ReadName(_line));
 
-  auto delimiter_pos = line.find_first_of("->");
+  auto delimiter_pos = _line.find_first_of("->");
   if (delimiter_pos != string::npos) {
-    builder.AddStop(RemoveTrailingSpaces(line.substr(0, delimiter_pos)));
-    line.remove_prefix(delimiter_pos);
+    builder.AddStop(RemoveTrailingSpaces(_line.substr(0, delimiter_pos)));
+    _line.remove_prefix(delimiter_pos);
 
-    bool circular = line[0] == '>';
+    bool circular = _line[0] == '>';
     builder.SetIsCircular(circular);
 
-    line.remove_prefix(1);
+    _line.remove_prefix(1);
     char delimiter = circular ? '>' : '-';
-    while (line.length() > 0) {
-      RemoveLeadingSpaces(line);
-      delimiter_pos = line.find(delimiter);
+    while (_line.length() > 0) {
+      RemoveLeadingSpaces(_line);
+      delimiter_pos = _line.find(delimiter);
       if (delimiter_pos == string::npos) {
-        builder.AddStop(RemoveTrailingSpaces(line));
+        builder.AddStop(RemoveTrailingSpaces(_line));
         break;
       } else {
-        builder.AddStop(RemoveTrailingSpaces(line.substr(0, delimiter_pos)));
-        line.remove_prefix(delimiter_pos + 1);
+        builder.AddStop(RemoveTrailingSpaces(_line.substr(0, delimiter_pos)));
+        _line.remove_prefix(delimiter_pos + 1);
       }
     }
   } else {
     // TODO: I suppose there should be no less than 2 stops in any route. Might
-    // make sense to throw here
+    // make sense to throw an exception here
     builder.SetIsCircular(false);
-    builder.AddStop(RemoveTrailingSpaces(line));
+    builder.AddStop(RemoveTrailingSpaces(_line));
   }
   return builder.Build();
 }
@@ -84,58 +84,79 @@ std::pair<std::string, double> ReadDistance(string_view distance_info) {
   return {name, distance};
 }
 
-StopCommand StringParser::ParseStopCommand(string_view line) const {
+StopCommand StringParser::ParseStopCommand() {
   StopCommandBuilder builder;
   // Read name
-  int first_non_space = line.find_first_not_of(" \r\n\t");
-  line.remove_prefix(first_non_space);
-  int colon_pos = line.find(':');
-  builder.SetName(line.substr(0, colon_pos));
-  line.remove_prefix(colon_pos + 1);
+  int first_non_space = _line.find_first_not_of(" \r\n\t");
+  _line.remove_prefix(first_non_space);
+  int colon_pos = _line.find(':');
+  builder.SetName(_line.substr(0, colon_pos));
+  _line.remove_prefix(colon_pos + 1);
 
   // Read location
-  auto comma_pos = line.find(',');
-  double latitude = stod(string(line.substr(0, comma_pos)));
-  line.remove_prefix(comma_pos + 1);
+  auto comma_pos = _line.find(',');
+  double latitude = stod(string(_line.substr(0, comma_pos)));
+  _line.remove_prefix(comma_pos + 1);
 
-  RemoveLeadingSpaces(line);
-  comma_pos = line.find(' ');
+  RemoveLeadingSpaces(_line);
+  comma_pos = _line.find(' ');
 
-  double longitude = stod(string(line.substr(0, comma_pos)));
+  double longitude = stod(string(_line.substr(0, comma_pos)));
   builder.SetLocation({Latitude(latitude), Longitude(longitude)});
-  line.remove_prefix(comma_pos + 1);
+  _line.remove_prefix(comma_pos + 1);
 
   // Read distances
   if (comma_pos != string::npos) {
-    comma_pos = line.find(',');
+    comma_pos = _line.find(',');
     do {
       if (comma_pos == string::npos) {
-        const auto &distance = ReadDistance(line);
+        const auto &distance = ReadDistance(_line);
         builder.AddDistance(distance.first, distance.second);
         break;
       } else {
-        const auto &distance = ReadDistance(line.substr(0, comma_pos));
+        const auto &distance = ReadDistance(_line.substr(0, comma_pos));
         builder.AddDistance(distance.first, distance.second);
       }
-      line.remove_prefix(comma_pos + 1);
-      comma_pos = line.find(',');
+      _line.remove_prefix(comma_pos + 1);
+      comma_pos = _line.find(',');
     } while (true);
   }
 
   return builder.Build();
 }
 
-BusQuery StringParser::ParseBusQuery(string_view line) const {
-  RemoveLeadingSpaces(line);
-  return BusQuery(string(line));
+BusQuery StringParser::ParseBusQuery() {
+  RemoveLeadingSpaces(_line);
+  return BusQuery(string(_line));
 }
 
-StopQuery StringParser::ParseStopQuery(string_view line) const {
-  RemoveLeadingSpaces(line);
-  return StopQuery(string(line));
+StopQuery StringParser::ParseStopQuery() {
+  RemoveLeadingSpaces(_line);
+  return StopQuery(string(_line));
 }
 
-BusCommand JsonParser::ParseBusCommand(string_view line) const {}
-StopCommand JsonParser::ParseStopCommand(string_view line) const {}
-BusQuery JsonParser::ParseBusQuery(string_view line) const {}
-StopQuery JsonParser::ParseStopQuery(string_view line) const {}
+BusCommand JsonParser::ParseBusCommand() {}
+
+StopCommand JsonParser::ParseStopCommand() {
+  auto data = _node.AsMap();
+
+  StopCommandBuilder builder;
+
+  builder.SetName(data.at("name").AsString());
+
+  double latitude = data.at("latitude").AsDouble();
+  double longitude = data.at("longitude").AsDouble();
+  builder.SetLocation({Latitude(latitude), Longitude(longitude)});
+
+  if (data.count("road_distances")) {
+    auto distances = data.at("road_distances").AsMap();
+    for (const auto &[name, node] : distances) {
+      builder.AddDistance(name, node.AsInt());
+    }
+  }
+
+  return builder.Build();
+}
+
+BusQuery JsonParser::ParseBusQuery() {}
+StopQuery JsonParser::ParseStopQuery() {}

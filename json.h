@@ -1,44 +1,39 @@
 #pragma once
 
-#include <istream>
+#include <iomanip>
 #include <map>
+#include <sstream>
 #include <string>
 #include <variant>
 #include <vector>
 
 namespace Json {
 
-  class Node : std::variant<std::vector<Node>,
-                            std::map<std::string, Node>,
-                            int,
-                            std::string> {
-  public:
-    using variant::variant;
+class Node : std::variant<std::vector<Node>, std::map<std::string, Node>, int,
+                          double, std::string> {
+public:
+  using variant::variant;
 
-    const auto& AsArray() const {
-      return std::get<std::vector<Node>>(*this);
-    }
-    const auto& AsMap() const {
-      return std::get<std::map<std::string, Node>>(*this);
-    }
-    int AsInt() const {
-      return std::get<int>(*this);
-    }
-    const auto& AsString() const {
-      return std::get<std::string>(*this);
-    }
-  };
+  std::string ToString(int level = 0) const;
+  const auto &AsArray() const { return std::get<std::vector<Node>>(*this); }
+  const auto &AsMap() const {
+    return std::get<std::map<std::string, Node>>(*this);
+  }
+  int AsInt() const { return std::get<int>(*this); }
+  double AsDouble() const { return std::get<double>(*this); }
+  const auto &AsString() const { return std::get<std::string>(*this); }
+};
 
-  class Document {
-  public:
-    explicit Document(Node root);
+class Document {
+public:
+  explicit Document(Node root);
 
-    const Node& GetRoot() const;
+  const Node &GetRoot() const;
 
-  private:
-    Node root;
-  };
+private:
+  Node root;
+};
 
-  Document Load(std::istream& input);
+Document Load(std::istream &input);
 
-}
+} // namespace Json

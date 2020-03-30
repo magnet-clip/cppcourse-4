@@ -6,16 +6,39 @@
 #include "query.h"
 #include "test_runner.h"
 
+#include <cmath>
 #include <sstream>
 
 using namespace std;
+
+void TestJsonStopParsing() {
+  stringstream s;
+  s << "{\"type\":\"Stop\",\"road_distances\":{\"Marushkino\":3900},"
+       "\"longitude\":37.20829,\"name\":\"Tolstopaltsevo\","
+       "\"latitude\":55.611087}";
+  JsonIo io;
+  auto cmd = io.ReadCommand(s);
+  ASSERT_EQUAL(cmd->Kind(), Commands::StopCommand);
+  auto &cmd_stop = static_cast<StopCommand &>(*cmd);
+  GeoPoint expected{Latitude(55.611087), Longitude(37.20829)};
+  ASSERT_EQUAL(cmd_stop.GetName(), "Tolstopaltsevo");
+  ASSERT(fabs(cmd_stop.GetLocation().GetLatitude() - expected.GetLatitude()) <
+         0.000001);
+  ASSERT(fabs(cmd_stop.GetLocation().GetLongitude() - expected.GetLongitude()) <
+         0.000001);
+
+  auto distances = cmd_stop.GetDistances();
+  ASSERT_EQUAL(distances.size(), 1UL);
+  ASSERT_EQUAL(distances.at("Marushkino"), 3900.0);
+}
 
 void TestStopCommandParsing() {
   {
     stringstream cmd_stream;
     cmd_stream << "1" << endl
                << "Stop Tolstopaltsevo: 55.611087, 37.20829" << endl;
-    auto res = ReadCommands(cmd_stream, StringParser());
+    StringIo io;
+    auto res = io.ReadCommands(cmd_stream);
     auto cmd_ptr = res[0];
     ASSERT_EQUAL(cmd_ptr->Kind(), Commands::StopCommand);
     auto &cmd_stop = static_cast<StopCommand &>(*cmd_ptr);
@@ -27,7 +50,8 @@ void TestStopCommandParsing() {
     stringstream cmd_stream;
     cmd_stream << "1" << endl
                << "Stop Biryulyovo Zapadnoye: 55.574371, 37.6517" << endl;
-    auto res = ReadCommands(cmd_stream, StringParser());
+    StringIo io;
+    auto res = io.ReadCommands(cmd_stream);
     auto cmd_ptr = res[0];
     ASSERT_EQUAL(cmd_ptr->Kind(), Commands::StopCommand);
     auto &cmd_stop = static_cast<StopCommand &>(*cmd_ptr);
@@ -46,8 +70,8 @@ void TestBusCommandParsing() {
       << endl
       << "Bus 750: Tolstopaltsevo - Marushkino - Rasskazovka" << endl
       << "Bus 1001: Krekshino" << endl;
-
-  auto res = ReadCommands(cmd_stream, StringParser());
+  StringIo io;
+  auto res = io.ReadCommands(cmd_stream);
   ASSERT_EQUAL(res.size(), 3U);
 
   ASSERT_EQUAL(res[0]->Kind(), Commands::BusCommand);
@@ -81,7 +105,8 @@ void TestBusCommandParsing() {
 CommandPtr ReadCommandFromString(const string &str) {
   stringstream s;
   s << str;
-  return ReadCommand(s, StringParser());
+  StringIo io;
+  return io.ReadCommand(s);
 }
 
 void TestStopCommandParsingExtended() {
@@ -109,9 +134,6 @@ void TestStopCommandParsingExtended() {
     ASSERT_EQUAL(stop.GetLocation(), expected_location);
 
     auto distances = stop.GetDistances();
-    // for (const auto &[name, distance] : distances) {
-    //   cout << name << ": " << distance << endl;
-    // }
     ASSERT_EQUAL(distances.size(), 1UL);
     ASSERT_EQUAL(distances.at("Marushkino"), 3900.0);
   }
@@ -140,8 +162,8 @@ void TestBusQueryParsing() {
              << "Bus 256" << endl
              << "Bus 750" << endl
              << "Bus 751" << endl;
-
-  auto res = ReadQueries(cmd_stream, StringParser());
+  StringIo io;
+  auto res = io.ReadQueries(cmd_stream);
   ASSERT_EQUAL(res.size(), 3U);
 
   {

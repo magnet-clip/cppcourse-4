@@ -1,9 +1,7 @@
 #include "database.test.h"
 #include "geomath.test.h"
 #include "io.h"
-#include "parser.h"
 #include "parser.test.h"
-#include "serializer.h"
 #include "test_runner.h"
 
 using namespace std;
@@ -16,10 +14,11 @@ void RunAllTests() {
   RUN_TEST(tr, TestStopCommandParsingExtended);
   RUN_TEST(tr, TestBusQueryParsing);
   RUN_TEST(tr, TestSample3);
+  RUN_TEST(tr, TestJsonStopParsing);
 }
 
 int main() {
   RunAllTests();
-  InAndOut(cin, cout, StringSerializer(), StringParser());
+  StringIo().InAndOut(cin, cout);
   return 0;
 }
