@@ -19,7 +19,8 @@ void RunAllTests() {
 }
 
 int main() {
-  RunAllTests();
-  StringIo().InAndOut(cin, cout);
+  // RunAllTests();
+  StringIo io;
+  InAndOut(cin, cout, io);
   return 0;
 }

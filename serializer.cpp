@@ -1,6 +1,7 @@
 #include "serializer.h"
 
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 
 using namespace std;
@@ -14,6 +15,8 @@ string Serializer::Serialize(ResponsePtr response) const {
     return Serialize(static_cast<const FoundStopResponse &>(*response));
   } else if (response->Kind() == Responses::NoStopResponse) {
     return Serialize(static_cast<const NoStopResponse &>(*response));
+  } else {
+    throw domain_error(response->Kind());
   }
 }
 
@@ -22,6 +25,7 @@ string StringSerializer::Serialize(const NoBusResponse &response) const {
   os << "Bus " << response.bus_number << ": not found";
   return os.str();
 }
+
 string StringSerializer::Serialize(const FoundBusResponse &response) const {
   ostringstream os;
   os.precision(7);
@@ -52,7 +56,18 @@ string StringSerializer::Serialize(const FoundStopResponse &response) const {
   return os.str();
 }
 
-string JsonSerializer::Serialize(const NoBusResponse &response) const {}
-string JsonSerializer::Serialize(const FoundBusResponse &response) const {}
-string JsonSerializer::Serialize(const NoStopResponse &response) const {}
-string JsonSerializer::Serialize(const FoundStopResponse &response) const {}
+string JsonSerializer::Serialize(const NoBusResponse &response) const {
+  return "Aaa1";
+}
+
+string JsonSerializer::Serialize(const FoundBusResponse &response) const {
+  return "Aaa2";
+}
+
+string JsonSerializer::Serialize(const NoStopResponse &response) const {
+  return "Aaa3";
+}
+
+string JsonSerializer::Serialize(const FoundStopResponse &response) const {
+  return "Aaa4";
+}

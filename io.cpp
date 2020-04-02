@@ -25,27 +25,6 @@ QueryPtr StringIo::ReadQuery(istream &is) {
   return _parser.ParseQuery(query);
 }
 
-string GetCommandFromJson(istream &is) {}
-
-CommandPtr JsonIo::ReadCommand(istream &is) {
-  using Json::Document;
-  Document doc = Json::Load(is);
-  auto node = doc.GetRoot();
-  auto info = node.AsMap();
-  auto command = info.at("type").AsString();
-  _parser.SetNode(node);
-  return _parser.ParseCommand(command);
-}
-
-QueryPtr JsonIo::ReadQuery(istream &is) {
-  using Json::Document;
-  Document doc = Json::Load(is);
-  auto node = doc.GetRoot();
-  auto info = node.AsMap();
-  auto query = info.at("type").AsString();
-  return _parser.ParseQuery(query);
-}
-
 vector<CommandPtr> StringIo::ReadCommands(istream &is) {
   int request_count = 0;
   is >> request_count;
@@ -66,20 +45,55 @@ vector<QueryPtr> StringIo::ReadQueries(istream &is) {
   }
   return res;
 }
-
-void StringIo::InAndOut(istream &is, ostream &os) {
-  auto commands = ReadCommands(is);
-  auto queries = ReadQueries(is);
-
-  Database db;
-  db.ExecuteCommands(commands);
-  auto res = db.ExecuteQueries(queries);
-  for (const auto &out : res) {
-    os << Serialize(out) << endl;
-  }
+CommandsAndQueries StringIo::ReadCommandsAndQueries(std::istream &is) {
+  return {ReadCommands(is), ReadQueries(is)};
 }
 
-vector<CommandPtr> JsonIo::ReadCommands(istream &is) {}
-vector<QueryPtr> JsonIo::ReadQueries(istream &is) {}
+CommandPtr JsonIo::ReadCommand(istream &is) {
+  using Json::Document;
+  Document doc = Json::Load(is);
+  auto node = doc.GetRoot();
+  auto info = node.AsMap();
+  auto command = info.at("type").AsString();
+  _parser.SetNode(node);
+  return _parser.ParseCommand(command);
+}
 
-void JsonIo::InAndOut(istream &is, ostream &os) {}
+QueryPtr JsonIo::ReadQuery(istream &is) {
+  using Json::Document;
+  Document doc = Json::Load(is);
+  auto node = doc.GetRoot();
+  auto info = node.AsMap();
+  auto query = info.at("type").AsString();
+  return _parser.ParseQuery(query);
+}
+
+CommandsAndQueries JsonIo::ReadCommandsAndQueries(std::istream &is) {
+  auto doc = Json::Load(is);
+  auto nodes = doc.GetRoot();
+  auto incoming_commands = nodes.AsMap().at("base_requests").AsArray();
+  vector<CommandPtr> commands;
+  for (const auto command : incoming_commands) {
+    _parser.SetNode(command);
+    commands.push_back(
+        _parser.ParseCommand(command.AsMap().at("type").AsString()));
+  }
+  vector<QueryPtr> queries;
+  auto incoming_queries = nodes.AsMap().at("base_requests").AsArray();
+  for (const auto query : incoming_queries) {
+    _parser.SetNode(query);
+    queries.push_back(_parser.ParseQuery(query.AsMap().at("type").AsString()));
+  }
+  return {move(commands), move(queries)};
+}
+
+void InAndOut(istream &is, ostream &os, Io &io) {
+  const auto &[commands, queries] = io.ReadCommandsAndQueries(is);
+  Database db;
+  db.ExecuteCommands(commands);
+  const auto &res = db.ExecuteQueries(queries);
+  const auto &output = io.ProcessResponses(res);
+  for (const auto &out : output) {
+    os << out << endl;
+  }
+}

@@ -172,5 +172,16 @@ StopCommand JsonParser::ParseStopCommand() {
   return builder.Build();
 }
 
-BusQuery JsonParser::ParseBusQuery() {}
-StopQuery JsonParser::ParseStopQuery() {}
+BusQuery JsonParser::ParseBusQuery() {
+  auto data = _node.AsMap();
+  auto name = data.at("name").AsString();
+  auto id = static_cast<size_t>(data.at("id").AsInt());
+  return {name, id};
+}
+
+StopQuery JsonParser::ParseStopQuery() {
+  auto data = _node.AsMap();
+  auto name = data.at("name").AsString();
+  auto id = static_cast<size_t>(data.at("id").AsInt());
+  return {name, id};
+}

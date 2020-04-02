@@ -2,11 +2,13 @@
 
 #include "response.h"
 
+#include <iostream>
+#include <memory>
 #include <string>
 
 class Serializer {
 public:
-  std::string Serialize(ResponsePtr response) const;
+  virtual std::string Serialize(ResponsePtr response) const;
 
 private:
   virtual std::string Serialize(const NoBusResponse &response) const = 0;
@@ -14,6 +16,8 @@ private:
   virtual std::string Serialize(const NoStopResponse &response) const = 0;
   virtual std::string Serialize(const FoundStopResponse &response) const = 0;
 };
+
+using SerializerPtr = std::shared_ptr<Serializer>;
 
 class StringSerializer : public Serializer {
 private:

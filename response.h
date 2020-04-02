@@ -5,10 +5,10 @@
 #include <vector>
 
 struct Responses {
-  static std::string FoundBusResponse;
-  static std::string NoBusResponse;
-  static std::string FoundStopResponse;
-  static std::string NoStopResponse;
+  static constexpr char const *FoundBusResponse = "FoundBusResponse";
+  static constexpr char const *NoBusResponse = "NoBusResponse";
+  static constexpr char const *FoundStopResponse = "FoundStopResponse";
+  static constexpr char const *NoStopResponse = "NoStopResponse";
 };
 
 struct Response {
