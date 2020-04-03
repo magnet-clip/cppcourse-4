@@ -44,7 +44,12 @@ Node LoadNumber(istream &input) {
 
   int idx = 0;
   bool its_double = false;
+  bool negative = false;
   char symbol = input.get();
+  if (symbol == '-') {
+    negative = true;
+    symbol = input.get();
+  }
   while (isdigit(symbol) || symbol == '.') {
     if (symbol == '.') {
       digits[idx] = symbol;
@@ -74,7 +79,7 @@ Node LoadNumber(istream &input) {
         fractions = true;
       }
     }
-    return Node(result);
+    return Node(negative ? -result : result);
 
   } else {
     int result = 0;
@@ -82,7 +87,7 @@ Node LoadNumber(istream &input) {
       result *= 10;
       result += digits[i];
     }
-    return Node(result);
+    return Node(negative ? -result : result);
   }
 }
 
@@ -119,7 +124,7 @@ Node LoadNode(istream &input) {
     return LoadDict(input);
   } else if (c == '"') {
     return LoadString(input);
-  } else if (c >= '0' && c <= '9') {
+  } else if ((c >= '0' && c <= '9') || (c == '-')) {
     input.putback(c);
     return LoadNumber(input);
   } else {
@@ -155,7 +160,7 @@ string Node::ToString(bool prettify, int level) const {
       } else {
         first = false;
       }
-      s << end_line << tab << key << semicolon
+      s << end_line << tab << "\"" << key << "\"" << semicolon
         << node.ToString(prettify, level + 1);
     }
     s << end_line << tab << "}";

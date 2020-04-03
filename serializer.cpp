@@ -62,7 +62,7 @@ string JsonSerializer::Serialize(const NoBusResponse &response) const {
   using Json::Node;
   map<string, Node> res;
   res.insert({"request_id", {response.GetId()}});
-  res.insert({"error_message", {"Not found"}});
+  res.insert({"error_message", {"not found"s}});
   Node result{res};
 
   return result.ToString();
@@ -85,7 +85,7 @@ string JsonSerializer::Serialize(const NoStopResponse &response) const {
   using Json::Node;
   map<string, Node> res;
   res.insert({"request_id", {response.GetId()}});
-  res.insert({"error_message", {"Not found"}});
+  res.insert({"error_message", {"not found"s}});
   Node result{res};
 
   return result.ToString();

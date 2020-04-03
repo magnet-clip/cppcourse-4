@@ -67,6 +67,17 @@ void TestJsonSample() {
   ASSERT_EQUAL(strings[0], "Bus 256: 6 stops on route, 5 unique stops, 5950 "
                            "route length, 1.361239 curvature");
   const auto jsons = json_io.ProcessResponses(responses);
-  ASSERT_EQUAL(jsons[0], "{curvature:1.361239,request_id:1965312327,route_"
-                         "length:5950,stop_count:6,unique_stop_count:5}");
+  ASSERT_EQUAL(jsons[0],
+               "{\"curvature\":1.361239,\"request_id\":1965312327,\"route_"
+               "length\":5950,\"stop_count\":6,\"unique_stop_count\":5}");
+  ASSERT_EQUAL(jsons[1],
+               "{\"curvature\":1.318084,\"request_id\":519139350,\"route_"
+               "length\":27600,\"stop_count\":5,\"unique_stop_count\":3}");
+  ASSERT_EQUAL(jsons[2],
+               "{\"error_message\":\"not found\",\"request_id\":194217464}");
+  ASSERT_EQUAL(jsons[3],
+               "{\"error_message\":\"not found\",\"request_id\":746888088}");
+  ASSERT_EQUAL(jsons[4], "{\"buses\":[],\"request_id\":65100610}");
+  ASSERT_EQUAL(jsons[5],
+               "{\"buses\":[\"256\",\"828\"],\"request_id\":1042838872}");
 }

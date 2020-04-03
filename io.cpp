@@ -93,7 +93,15 @@ void InAndOut(istream &is, ostream &os, Io &io) {
   db.ExecuteCommands(commands);
   const auto &res = db.ExecuteQueries(queries);
   const auto &output = io.ProcessResponses(res);
+  bool first = true;
+  os << "[";
   for (const auto &out : output) {
-    os << out << endl;
+    if (first) {
+      first = false;
+    } else {
+      os << "," << endl;
+    }
+    os << out;
   }
+  os << "]";
 }
