@@ -141,19 +141,15 @@ string Node::ToString(bool prettify, int level) const {
   auto end_line = prettify ? "\n" : "";
   if (IsDouble()) {
     s.precision(7);
-    READ(data, double);
-    s << data;
+    s << AsDouble();
   } else if (IsInt()) {
-    READ(data, int);
-    s << data;
+    s << AsInt();
   } else if (IsBool()) {
-    READ(data, bool);
-    s << (data ? "true" : "false");
+    s << (AsBool() ? "true" : "false");
   } else if (IsString()) {
-    READ(data, string);
-    s << "\"" << data << "\"";
+    s << "\"" << AsString() << "\"";
   } else if (IsMap()) {
-    READ(data, JsonObject);
+    const auto &data = AsMap();
     s << "{";
     bool first = true;
     for (const auto &[key, node] : data) {
@@ -168,7 +164,7 @@ string Node::ToString(bool prettify, int level) const {
     s << end_line << tab << "}";
 
   } else if (IsArray()) {
-    READ(data, JsonArray);
+    const auto &data = AsArray();
     bool first = true;
     s << "[";
     for (const auto &node : data) {
