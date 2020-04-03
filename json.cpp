@@ -135,23 +135,25 @@ Node LoadNode(istream &input) {
 
 string Node::ToString(bool prettify, int level) const {
   stringstream s;
-
   string tab = prettify ? string(level * 2, ' ') : "";
   string comma = prettify ? ", " : ",";
   string semicolon = prettify ? ": " : ":";
   auto end_line = prettify ? "\n" : "";
-
-  if (holds_alternative<double>(*this)) {
+  if (IsDouble()) {
     s.precision(7);
-    s << get<double>(*this);
-  } else if (holds_alternative<int>(*this)) {
-    s << get<int>(*this);
-  } else if (holds_alternative<bool>(*this)) {
-    s << (get<bool>(*this) ? "true" : "false");
-  } else if (holds_alternative<string>(*this)) {
-    s << "\"" << get<string>(*this) << "\"";
-  } else if (holds_alternative<map<string, Node>>(*this)) {
-    const auto &data = get<map<string, Node>>(*this);
+    READ(data, double);
+    s << data;
+  } else if (IsInt()) {
+    READ(data, int);
+    s << data;
+  } else if (IsBool()) {
+    READ(data, bool);
+    s << (data ? "true" : "false");
+  } else if (IsString()) {
+    READ(data, string);
+    s << "\"" << data << "\"";
+  } else if (IsMap()) {
+    READ(data, JsonObject);
     s << "{";
     bool first = true;
     for (const auto &[key, node] : data) {
@@ -165,8 +167,8 @@ string Node::ToString(bool prettify, int level) const {
     }
     s << end_line << tab << "}";
 
-  } else if (holds_alternative<vector<Node>>(*this)) {
-    const auto &data = get<vector<Node>>(*this);
+  } else if (IsArray()) {
+    READ(data, JsonArray);
     bool first = true;
     s << "[";
     for (const auto &node : data) {

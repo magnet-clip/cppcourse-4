@@ -23,7 +23,7 @@ void RunAllTests() {
 }
 
 int main() {
-  RunAllTests();
+  // RunAllTests();
   JsonIo io;
   InAndOut(cin, cout, io);
   return 0;
