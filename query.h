@@ -1,5 +1,5 @@
 #pragma once
-
+#include "id.h"
 #include <iostream>
 #include <memory>
 #include <string>
@@ -11,19 +11,20 @@ struct Queries {
 };
 
 struct Query {
-  Query(size_t id) : _id(id) {}
+  Query(RequestId id) : _id(id) {}
   virtual std::string Kind() const = 0;
-  size_t GetId() const { return _id; };
+  RequestId GetId() const { return _id; };
 
 protected:
-  size_t _id = 0;
+  RequestId _id = 0;
 };
 
 using QueryPtr = std::shared_ptr<Query>;
 
 class BusQuery : public Query {
 public:
-  BusQuery(const std::string &name, size_t id = 0) : Query(id), _name(name) {}
+  BusQuery(const std::string &name, RequestId id = 0)
+      : Query(id), _name(name) {}
   virtual std::string Kind() const override { return Queries::BusQuery; };
   std::string GetName() const { return _name; }
 
@@ -33,7 +34,8 @@ private:
 
 class StopQuery : public Query {
 public:
-  StopQuery(const std::string &name, size_t id = 0) : Query(id), _name(name) {}
+  StopQuery(const std::string &name, RequestId id = 0)
+      : Query(id), _name(name) {}
   virtual std::string Kind() const override { return Queries::StopQuery; };
   std::string GetName() const { return _name; }
 

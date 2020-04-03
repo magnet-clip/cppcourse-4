@@ -1,5 +1,7 @@
 #include "serializer.h"
 
+#include "json.h"
+
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -22,14 +24,14 @@ string Serializer::Serialize(ResponsePtr response) const {
 
 string StringSerializer::Serialize(const NoBusResponse &response) const {
   ostringstream os;
-  os << "Bus " << response.bus_number << ": not found";
+  os << "Bus " << response.bus_name << ": not found";
   return os.str();
 }
 
 string StringSerializer::Serialize(const FoundBusResponse &response) const {
   ostringstream os;
   os.precision(7);
-  os << "Bus " << response.bus_number << ": " << response.num_stops
+  os << "Bus " << response.bus_name << ": " << response.num_stops
      << " stops on route, " << response.num_unique_stops << " unique stops, "
      << response.length << " route length, " << response.curvature
      << " curvature";
@@ -57,17 +59,48 @@ string StringSerializer::Serialize(const FoundStopResponse &response) const {
 }
 
 string JsonSerializer::Serialize(const NoBusResponse &response) const {
-  return "Aaa1";
+  using Json::Node;
+  map<string, Node> res;
+  res.insert({"request_id", {response.GetId()}});
+  res.insert({"error_message", {"Not found"}});
+  Node result{res};
+
+  return result.ToString();
 }
 
 string JsonSerializer::Serialize(const FoundBusResponse &response) const {
-  return "Aaa2";
+  using Json::Node;
+  map<string, Node> res;
+  res.insert({"request_id", {response.GetId()}});
+  res.insert({"route_length", {response.length}});
+  res.insert({"curvature", {response.curvature}});
+  res.insert({"stop_count", {response.num_stops}});
+  res.insert({"unique_stop_count", {response.num_unique_stops}});
+  Node result{res};
+
+  return result.ToString();
 }
 
 string JsonSerializer::Serialize(const NoStopResponse &response) const {
-  return "Aaa3";
+  using Json::Node;
+  map<string, Node> res;
+  res.insert({"request_id", {response.GetId()}});
+  res.insert({"error_message", {"Not found"}});
+  Node result{res};
+
+  return result.ToString();
 }
 
 string JsonSerializer::Serialize(const FoundStopResponse &response) const {
-  return "Aaa4";
+  using Json::Node;
+  map<string, Node> res;
+  res.insert({"request_id", {response.GetId()}});
+  vector<Node> buses;
+  for (const auto &bus_name : response.bus_names) {
+    buses.push_back({bus_name});
+  }
+  res.insert({"buses", {buses}});
+  Node result{res};
+
+  return result.ToString();
 }

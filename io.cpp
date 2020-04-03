@@ -79,7 +79,7 @@ CommandsAndQueries JsonIo::ReadCommandsAndQueries(std::istream &is) {
         _parser.ParseCommand(command.AsMap().at("type").AsString()));
   }
   vector<QueryPtr> queries;
-  auto incoming_queries = nodes.AsMap().at("base_requests").AsArray();
+  auto incoming_queries = nodes.AsMap().at("stat_requests").AsArray();
   for (const auto query : incoming_queries) {
     _parser.SetNode(query);
     queries.push_back(_parser.ParseQuery(query.AsMap().at("type").AsString()));

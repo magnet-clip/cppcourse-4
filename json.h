@@ -14,7 +14,7 @@ class Node : std::variant<std::vector<Node>, std::map<std::string, Node>, int,
 public:
   using variant::variant;
 
-  std::string ToString(int level = 0) const;
+  std::string ToString(bool prettify = false, int level = 0) const;
   const auto &AsArray() const { return std::get<std::vector<Node>>(*this); }
   const auto &AsBool() const { return std::get<bool>(*this); }
   const auto &AsMap() const {

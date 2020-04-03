@@ -56,8 +56,8 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
   if (auto bus_id = _bus.TryFind(bus_name); bus_id != nullopt) {
     const auto &route = _route.Get(*bus_id);
 
-    FoundBusResponse response;
-    response.bus_number = bus_name;
+    FoundBusResponse response(query.GetId());
+    response.bus_name = bus_name;
     response.num_stops = route.GetStopIds().size();
     response.num_unique_stops = route.UniqueStops().size();
     response.length = _given_dist.Calculate(route);
@@ -65,19 +65,19 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
 
     return make_shared<FoundBusResponse>(response);
   } else {
-    return make_shared<NoBusResponse>(bus_name);
+    return make_shared<NoBusResponse>(query.GetId(), bus_name);
   }
 }
 
 ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
   auto stop_name = query.GetName();
   if (const auto &stop = _stop.TryFindByName(stop_name); stop != nullptr) {
-    FoundStopResponse response;
+    FoundStopResponse response(query.GetId());
     response.stop_name = stop->GetName();
     response.bus_names = _bus.GetBusNames(stop->GetUniqueBuses());
     return make_shared<FoundStopResponse>(response);
   } else {
-    return make_shared<NoStopResponse>(stop_name);
+    return make_shared<NoStopResponse>(query.GetId(), stop_name);
   }
 }
 

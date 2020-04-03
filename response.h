@@ -1,5 +1,5 @@
 #pragma once
-
+#include "id.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -12,17 +12,24 @@ struct Responses {
 };
 
 struct Response {
+  Response(RequestId id) : _id(id) {}
   virtual std::string Kind() const = 0;
+  int GetId() const { return _id; }
+
+protected:
+  RequestId _id;
 };
 
 using ResponsePtr = std::shared_ptr<Response>;
 
 struct BusResponse : public Response {
-  std::string bus_number;
+  BusResponse(RequestId id) : Response(id) {}
+  std::string bus_name;
   virtual std::string Kind() const = 0;
 };
 
 struct FoundBusResponse : public BusResponse {
+  FoundBusResponse(RequestId id) : BusResponse(id) {}
   int num_stops;
   int num_unique_stops;
   double length;
@@ -34,16 +41,20 @@ struct FoundBusResponse : public BusResponse {
 };
 
 struct NoBusResponse : public BusResponse {
-  NoBusResponse(std::string number) { bus_number = number; }
+  NoBusResponse(RequestId id, std::string name) : BusResponse(id) {
+    bus_name = name;
+  }
   virtual std::string Kind() const override { return Responses::NoBusResponse; }
 };
 
 struct StopResponse : public Response {
+  StopResponse(RequestId id) : Response(id) {}
   std::string stop_name;
   virtual std::string Kind() const = 0;
 };
 
 struct FoundStopResponse : public StopResponse {
+  FoundStopResponse(RequestId id) : StopResponse(id) {}
   std::vector<std::string> bus_names;
 
   virtual std::string Kind() const override {
@@ -52,7 +63,9 @@ struct FoundStopResponse : public StopResponse {
 };
 
 struct NoStopResponse : public StopResponse {
-  NoStopResponse(std::string name) { stop_name = name; }
+  NoStopResponse(RequestId id, std::string name) : StopResponse(id) {
+    stop_name = name;
+  }
   virtual std::string Kind() const override {
     return Responses::NoStopResponse;
   }

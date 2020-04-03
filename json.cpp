@@ -128,9 +128,13 @@ Node LoadNode(istream &input) {
   }
 }
 
-string Node::ToString(int level) const {
+string Node::ToString(bool prettify, int level) const {
   stringstream s;
-  string tab(level * 2, ' ');
+
+  string tab = prettify ? string(level * 2, ' ') : "";
+  string comma = prettify ? ", " : ",";
+  string semicolon = prettify ? ": " : ":";
+  auto end_line = prettify ? "\n" : "";
 
   if (holds_alternative<double>(*this)) {
     s.precision(7);
@@ -147,13 +151,14 @@ string Node::ToString(int level) const {
     bool first = true;
     for (const auto &[key, node] : data) {
       if (!first) {
-        s << ", ";
+        s << comma;
       } else {
         first = false;
       }
-      s << endl << tab << key << ": " << node.ToString(level + 1);
+      s << end_line << tab << key << semicolon
+        << node.ToString(prettify, level + 1);
     }
-    s << endl << tab << "}";
+    s << end_line << tab << "}";
 
   } else if (holds_alternative<vector<Node>>(*this)) {
     const auto &data = get<vector<Node>>(*this);
@@ -161,13 +166,13 @@ string Node::ToString(int level) const {
     s << "[";
     for (const auto &node : data) {
       if (!first) {
-        s << ", ";
+        s << comma;
       } else {
         first = false;
       }
-      s << endl << tab << node.ToString(level + 1);
+      s << end_line << tab << node.ToString(prettify, level + 1);
     }
-    s << endl << tab << "]";
+    s << end_line << tab << "]";
   }
   return s.str();
 }

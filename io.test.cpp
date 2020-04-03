@@ -1,5 +1,7 @@
 #include "io.test.h"
+
 #include "io.h"
+#include "test_runner.h"
 
 #include <iostream>
 #include <sstream>
@@ -54,8 +56,17 @@ void TestJsonSample() {
        "\"id\":65100610},{\"type\":\"Stop\",\"name\":\"Biryulyovo "
        "Zapadnoye\",\"id\":1042838872}]}";
 
-  JsonIo io;
+  JsonIo json_io;
+  StringIo string_io;
   stringstream os;
-  const auto &[commands, queries] = io.ReadCommandsAndQueries(s);
-  // TODO finish test
+  const auto &[commands, queries] = json_io.ReadCommandsAndQueries(s);
+  Database db;
+  db.ExecuteCommands(commands);
+  const auto responses = db.ExecuteQueries(queries);
+  const auto strings = string_io.ProcessResponses(responses);
+  ASSERT_EQUAL(strings[0], "Bus 256: 6 stops on route, 5 unique stops, 5950 "
+                           "route length, 1.361239 curvature");
+  const auto jsons = json_io.ProcessResponses(responses);
+  ASSERT_EQUAL(jsons[0], "{curvature:1.361239,request_id:1965312327,route_"
+                         "length:5950,stop_count:6,unique_stop_count:5}");
 }
