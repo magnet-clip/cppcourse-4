@@ -58,49 +58,53 @@ string StringSerializer::Serialize(const FoundStopResponse &response) const {
   return os.str();
 }
 
-string JsonSerializer::Serialize(const NoBusResponse &response) const {
-  using Json::Node;
-  map<string, Node> res;
+Json::Node GetJsonNode(const NoBusResponse &response) {
+  map<string, Json::Node> res;
   res.insert({"request_id", {response.GetId()}});
   res.insert({"error_message", {"not found"s}});
-  Node result{res};
-
-  return result.ToString();
+  return {res};
 }
 
-string JsonSerializer::Serialize(const FoundBusResponse &response) const {
-  using Json::Node;
-  map<string, Node> res;
+Json::Node GetJsonNode(const FoundBusResponse &response) {
+  map<string, Json::Node> res;
   res.insert({"request_id", {response.GetId()}});
   res.insert({"route_length", {response.length}});
   res.insert({"curvature", {response.curvature}});
   res.insert({"stop_count", {response.num_stops}});
   res.insert({"unique_stop_count", {response.num_unique_stops}});
-  Node result{res};
-
-  return result.ToString();
+  return {res};
 }
 
-string JsonSerializer::Serialize(const NoStopResponse &response) const {
-  using Json::Node;
-  map<string, Node> res;
+Json::Node GetJsonNode(const NoStopResponse &response) {
+  map<string, Json::Node> res;
   res.insert({"request_id", {response.GetId()}});
   res.insert({"error_message", {"not found"s}});
-  Node result{res};
-
-  return result.ToString();
+  return {res};
 }
 
-string JsonSerializer::Serialize(const FoundStopResponse &response) const {
-  using Json::Node;
-  map<string, Node> res;
+Json::Node GetJsonNode(const FoundStopResponse &response) {
+  map<string, Json::Node> res;
   res.insert({"request_id", {response.GetId()}});
-  vector<Node> buses;
+  vector<Json::Node> buses;
   for (const auto &bus_name : response.bus_names) {
     buses.push_back({bus_name});
   }
   res.insert({"buses", {buses}});
-  Node result{res};
+  return {res};
+}
 
-  return result.ToString();
+string JsonSerializer::Serialize(const NoBusResponse &response) const {
+  return GetJsonNode(response).ToString();
+}
+
+string JsonSerializer::Serialize(const FoundBusResponse &response) const {
+  return GetJsonNode(response).ToString();
+}
+
+string JsonSerializer::Serialize(const NoStopResponse &response) const {
+  return GetJsonNode(response).ToString();
+}
+
+string JsonSerializer::Serialize(const FoundStopResponse &response) const {
+  return GetJsonNode(response).ToString();
 }

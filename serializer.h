@@ -1,5 +1,6 @@
 #pragma once
 
+#include "json.h"
 #include "response.h"
 
 #include <iostream>
@@ -28,6 +29,11 @@ private:
   virtual std::string
   Serialize(const FoundStopResponse &response) const override;
 };
+
+Json::Node GetJsonNode(const NoBusResponse &response);
+Json::Node GetJsonNode(const FoundBusResponse &response);
+Json::Node GetJsonNode(const NoStopResponse &response);
+Json::Node GetJsonNode(const FoundStopResponse &response);
 
 class JsonSerializer : public Serializer {
 private:

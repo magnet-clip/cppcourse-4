@@ -59,7 +59,7 @@ void TestSample3() {
       "Stop Biryulyovo Zapadnoye: buses 256 828",
   };
   StringIo io;
-  const auto &[commands, queries] = io.ReadCommandsAndQueries(s);
+  const auto &[settings, commands, queries] = io.ReadInput(s);
 
   Database db;
   db.ExecuteCommands(commands);
@@ -132,7 +132,7 @@ void TestJsonCommandsQueries() {
 
   JsonIo io;
   stringstream os;
-  const auto &[commands, queries] = io.ReadCommandsAndQueries(s);
+  const auto &[settings, commands, queries] = io.ReadInput(s);
   Database db;
   db.ExecuteCommands(commands);
   const auto responses = db.ExecuteQueries(queries);

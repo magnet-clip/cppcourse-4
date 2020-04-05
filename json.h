@@ -41,7 +41,18 @@ public:
   }
   const auto IsString() const { return std::holds_alternative<JsonStr>(*this); }
   const auto &AsString() const { return std::get<JsonStr>(*this); }
+  const auto IsNumber() const { return IsInt() || IsDouble(); }
+  double AsNumber() {
+    if (IsInt()) {
+      return static_cast<double>(AsInt());
+    } else {
+      return AsDouble();
+    }
+  }
 };
+
+bool operator==(const Node &a, const Node &b);
+std::ostream &operator<<(std::ostream &os, const Node &node);
 
 class Document {
 public:

@@ -180,6 +180,52 @@ string Node::ToString(bool prettify, int level) const {
   return s.str();
 }
 
+bool operator==(const Node &a, const Node &b) {
+  if (a.IsInt() && b.IsInt()) {
+    return a.AsInt() == b.AsInt();
+  } else if (a.IsDouble() && b.IsDouble()) {
+    return a.AsDouble() == b.AsDouble();
+  } else if (a.IsString() && b.IsString()) {
+    return a.AsString() == b.AsString();
+  } else if (a.IsBool() && b.IsBool()) {
+    return a.AsBool() == b.AsBool();
+  } else if (a.IsArray() && b.IsArray()) {
+    const auto &a_arr = a.AsArray();
+    const auto &b_arr = b.AsArray();
+    if (a_arr.size() == b_arr.size()) {
+      for (size_t i = 0; i < a_arr.size(); i++) {
+        if (!(a_arr[i] == b_arr[i])) {
+          return false;
+        }
+      }
+      return true;
+    } else {
+      return false;
+    }
+  } else if (a.IsMap() && b.IsMap()) {
+    const auto &a_map = a.AsMap();
+    const auto &b_map = b.AsMap();
+    if (a_map.size() == b_map.size()) {
+      for (const auto &[key, value] : a_map) {
+        if (!b_map.count(key)) {
+          return false;
+        }
+        if (!(value == b_map.at(key))) {
+          return false;
+        }
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+  return false;
+}
+
+ostream &operator<<(ostream &os, const Node &node) {
+  return os << node.ToString();
+}
+
 Document Load(istream &input) { return Document{LoadNode(input)}; }
 
 } // namespace Json

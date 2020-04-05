@@ -45,8 +45,9 @@ vector<QueryPtr> StringIo::ReadQueries(istream &is) {
   }
   return res;
 }
-CommandsAndQueries StringIo::ReadCommandsAndQueries(std::istream &is) {
-  return {ReadCommands(is), ReadQueries(is)};
+
+Input StringIo::ReadInput(std::istream &is) {
+  return {{0, 0}, ReadCommands(is), ReadQueries(is)};
 }
 
 CommandPtr JsonIo::ReadCommand(istream &is) {
@@ -68,10 +69,20 @@ QueryPtr JsonIo::ReadQuery(istream &is) {
   return _parser.ParseQuery(query);
 }
 
-CommandsAndQueries JsonIo::ReadCommandsAndQueries(std::istream &is) {
+Input JsonIo::ReadInput(std::istream &is) {
   auto doc = Json::Load(is);
   auto nodes = doc.GetRoot();
-  auto incoming_commands = nodes.AsMap().at("base_requests").AsArray();
+
+  // TODO: what to do if routing_settings are missing
+  RoutingSettings settings{0, 0};
+  const auto &nodes_map = nodes.AsMap();
+  if (nodes_map.count("routing_settings")) {
+    auto incoming_settings = nodes_map.at("routing_settings").AsMap();
+    settings = {
+        incoming_settings.at("bus_wait_time").AsInt(),
+        static_cast<int>(incoming_settings.at("bus_velocity").AsNumber())};
+  }
+  auto incoming_commands = nodes_map.at("base_requests").AsArray();
   vector<CommandPtr> commands;
   for (const auto command : incoming_commands) {
     _parser.SetNode(command);
@@ -79,17 +90,18 @@ CommandsAndQueries JsonIo::ReadCommandsAndQueries(std::istream &is) {
         _parser.ParseCommand(command.AsMap().at("type").AsString()));
   }
   vector<QueryPtr> queries;
-  auto incoming_queries = nodes.AsMap().at("stat_requests").AsArray();
+  auto incoming_queries = nodes_map.at("stat_requests").AsArray();
   for (const auto query : incoming_queries) {
     _parser.SetNode(query);
     queries.push_back(_parser.ParseQuery(query.AsMap().at("type").AsString()));
   }
-  return {move(commands), move(queries)};
+  return {move(settings), move(commands), move(queries)};
 }
 
 void InAndOut(istream &is, ostream &os, Io &io) {
-  const auto &[commands, queries] = io.ReadCommandsAndQueries(is);
+  const auto &[settings, commands, queries] = io.ReadInput(is);
   Database db;
+
   db.ExecuteCommands(commands);
   const auto &res = db.ExecuteQueries(queries);
   const auto &output = io.ProcessResponses(res);
@@ -104,4 +116,18 @@ void InAndOut(istream &is, ostream &os, Io &io) {
     os << out;
   }
   os << "]";
+}
+
+Json::Node JsonIo::ResponseToJsonNode(ResponsePtr response) {
+  if (response->Kind() == Responses::NoBusResponse) {
+    return GetJsonNode(static_cast<NoBusResponse &>(*response));
+  } else if (response->Kind() == Responses::FoundBusResponse) {
+    return GetJsonNode(static_cast<FoundBusResponse &>(*response));
+  } else if (response->Kind() == Responses::NoStopResponse) {
+    return GetJsonNode(static_cast<NoStopResponse &>(*response));
+  } else if (response->Kind() == Responses::FoundStopResponse) {
+    return GetJsonNode(static_cast<FoundStopResponse &>(*response));
+  } else {
+    throw std::invalid_argument(response->Kind());
+  }
 }

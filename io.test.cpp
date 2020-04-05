@@ -1,10 +1,12 @@
 #include "io.test.h"
 
 #include "io.h"
+#include "json.h"
 #include "test_runner.h"
 
 #include <iostream>
 #include <sstream>
+#include <unordered_map>
 
 using namespace std;
 
@@ -59,7 +61,7 @@ void TestJsonSample() {
   JsonIo json_io;
   StringIo string_io;
   stringstream os;
-  const auto &[commands, queries] = json_io.ReadCommandsAndQueries(s);
+  const auto &[settings, commands, queries] = json_io.ReadInput(s);
   Database db;
   db.ExecuteCommands(commands);
   const auto responses = db.ExecuteQueries(queries);
@@ -80,4 +82,41 @@ void TestJsonSample() {
   ASSERT_EQUAL(jsons[4], "{\"buses\":[],\"request_id\":65100610}");
   ASSERT_EQUAL(jsons[5],
                "{\"buses\":[\"256\",\"828\"],\"request_id\":1042838872}");
+}
+
+void Compare(const unordered_map<RequestId, Json::Node> &actual,
+             const unordered_map<RequestId, Json::Node> &expected) {
+  for (const auto &[id, actual_node] : actual) {
+    ASSERT_EQUAL(expected.count(id), 1UL);
+    ASSERT_EQUAL(actual_node, expected.at(id));
+  }
+}
+
+unordered_map<RequestId, Json::Node>
+ReadExpectedResponsesFromJson(istream &is) {
+  auto doc = Json::Load(is);
+  unordered_map<RequestId, Json::Node> res;
+  for (const auto &node : doc.GetRoot().AsArray()) {
+    auto id = node.AsMap().at("request_id").AsInt();
+    res.insert({id, node});
+  }
+  return res;
+}
+
+void RunIntegrationTest(istream &input, istream &output) {
+  JsonIo json_io;
+  stringstream os;
+  const auto &[settings, commands, queries] = json_io.ReadInput(input);
+  Database db;
+  db.ExecuteCommands(commands);
+  const auto responses = db.ExecuteQueries(queries);
+  unordered_map<RequestId, Json::Node> implied_responses;
+  for (const auto &response : responses) {
+    const auto &node = json_io.ResponseToJsonNode(response);
+    implied_responses.insert({response->GetId(), node});
+  }
+
+  const auto expected_responses = ReadExpectedResponsesFromJson(output);
+
+  Compare(implied_responses, expected_responses);
 }

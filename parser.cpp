@@ -151,14 +151,6 @@ BusCommand JsonParser::ParseBusCommand() {
   return builder.Build();
 }
 
-double GetIntOrDouble(Json::Node node) {
-  if (node.IsInt()) {
-    return static_cast<double>(node.AsInt());
-  } else {
-    return node.AsDouble();
-  }
-}
-
 StopCommand JsonParser::ParseStopCommand() {
   auto data = _node.AsMap();
 
@@ -166,8 +158,8 @@ StopCommand JsonParser::ParseStopCommand() {
 
   builder.SetName(data.at("name").AsString());
 
-  double latitude = GetIntOrDouble(data.at("latitude"));
-  double longitude = GetIntOrDouble(data.at("longitude"));
+  double latitude = data.at("latitude").AsNumber();
+  double longitude = data.at("longitude").AsNumber();
   builder.SetLocation({Latitude(latitude), Longitude(longitude)});
 
   if (data.count("road_distances")) {
