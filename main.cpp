@@ -6,9 +6,11 @@
 #include "parser.test.h"
 #include "test_runner.h"
 
+#include <fstream>
+
 using namespace std;
 
-void RunAllTests() {
+void RunUnitTests() {
   TestRunner tr;
   RUN_TEST(tr, TestDistance);
   RUN_TEST(tr, TestStopCommandParsing);
@@ -22,8 +24,25 @@ void RunAllTests() {
   RUN_TEST(tr, TestJsonSerialization);
 }
 
+void TestFiles(const string &input, const string &output) {
+  ifstream f_input(input);
+  ifstream f_output(output);
+  if (!f_input.is_open()) {
+    throw domain_error("closed");
+  }
+  RunIntegrationTest(f_input, f_output);
+}
+
+void It1() { TestFiles("../test-1-input.json", "../test-1-output.json"); }
+
+void RunIntegrationTests() {
+  TestRunner tr;
+  RUN_TEST(tr, It1);
+}
+
 int main() {
-  RunAllTests();
+  RunUnitTests();
+  RunIntegrationTests();
   JsonIo io;
   InAndOut(cin, cout, io);
   return 0;

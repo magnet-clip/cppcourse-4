@@ -73,7 +73,7 @@ Input JsonIo::ReadInput(std::istream &is) {
   auto doc = Json::Load(is);
   auto nodes = doc.GetRoot();
 
-  // TODO: what to do if routing_settings are missing
+  // If routing_settings are missing, I set them to zero
   RoutingSettings settings{0, 0};
   const auto &nodes_map = nodes.AsMap();
   if (nodes_map.count("routing_settings")) {

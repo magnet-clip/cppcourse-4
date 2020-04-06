@@ -9,7 +9,6 @@ using namespace std;
 using namespace Json;
 
 void TestJsonSerialization() {
-  // TODO: 1.0 prints out as 1
   {
     stringstream s;
     s << "{\"a\" : 1}";

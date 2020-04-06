@@ -1,6 +1,8 @@
 #include "json.h"
 
+#include <cmath>
 #include <iostream>
+
 using namespace std;
 
 namespace Json {
@@ -184,7 +186,9 @@ bool operator==(const Node &a, const Node &b) {
   if (a.IsInt() && b.IsInt()) {
     return a.AsInt() == b.AsInt();
   } else if (a.IsDouble() && b.IsDouble()) {
-    return a.AsDouble() == b.AsDouble();
+    return fabs(a.AsDouble() - b.AsDouble()) < 0.00001;
+  } else if (a.IsNumber() && b.IsNumber()) {
+    return fabs(a.AsNumber() - b.AsNumber()) < 0.00001;
   } else if (a.IsString() && b.IsString()) {
     return a.AsString() == b.AsString();
   } else if (a.IsBool() && b.IsBool()) {
