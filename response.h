@@ -81,7 +81,7 @@ struct RouteResponse : public Response {
 struct FoundRouteResponse : public RouteResponse {
   FoundRouteResponse(RequestId id) : RouteResponse(id) {}
   virtual std::string Kind() const override {
-    return Responses::NoRouteResponse;
+    return Responses::FoundRouteResponse;
   }
 };
 
