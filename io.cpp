@@ -127,6 +127,10 @@ Json::Node JsonIo::ResponseToJsonNode(ResponsePtr response) {
     return GetJsonNode(static_cast<NoStopResponse &>(*response));
   } else if (response->Kind() == Responses::FoundStopResponse) {
     return GetJsonNode(static_cast<FoundStopResponse &>(*response));
+  } else if (response->Kind() == Responses::NoRouteResponse) {
+    return GetJsonNode(static_cast<NoRouteResponse &>(*response));
+  } else if (response->Kind() == Responses::FoundRouteResponse) {
+    return GetJsonNode(static_cast<FoundRouteResponse &>(*response));
   } else {
     throw std::invalid_argument(response->Kind());
   }

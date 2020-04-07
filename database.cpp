@@ -45,6 +45,8 @@ vector<ResponsePtr> Database::ExecuteQueries(const vector<QueryPtr> &queries) {
       res.push_back(ExecuteBusQuery(static_cast<const BusQuery &>(*query)));
     } else if (query->Kind() == Queries::StopQuery) {
       res.push_back(ExecuteStopQuery(static_cast<const StopQuery &>(*query)));
+    } else if (query->Kind() == Queries::RouteQuery) {
+      res.push_back(ExecuteRouteQuery(static_cast<const RouteQuery &>(*query)));
     }
   }
   return res;
@@ -78,6 +80,16 @@ ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
     return make_shared<FoundStopResponse>(response);
   } else {
     return make_shared<NoStopResponse>(query.GetId(), stop_name);
+  }
+}
+
+ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
+  const auto &from = _stop.TryFindByName(query.GetFrom());
+  const auto &to = _stop.TryFindByName(query.GetTo());
+  if (from != nullptr && to != nullptr) {
+    return make_shared<FoundRouteResponse>(query.GetId());
+  } else {
+    return make_shared<NoRouteResponse>(query.GetId());
   }
 }
 

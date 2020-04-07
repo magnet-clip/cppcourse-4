@@ -9,6 +9,8 @@ struct Responses {
   static constexpr char const *NoBusResponse = "NoBusResponse";
   static constexpr char const *FoundStopResponse = "FoundStopResponse";
   static constexpr char const *NoStopResponse = "NoStopResponse";
+  static constexpr char const *FoundRouteResponse = "FoundRouteResponse";
+  static constexpr char const *NoRouteResponse = "NoRouteResponse";
 };
 
 struct Response {
@@ -68,5 +70,24 @@ struct NoStopResponse : public StopResponse {
   }
   virtual std::string Kind() const override {
     return Responses::NoStopResponse;
+  }
+};
+
+struct RouteResponse : public Response {
+  RouteResponse(RequestId id) : Response(id) {}
+  virtual std::string Kind() const = 0;
+};
+
+struct FoundRouteResponse : public RouteResponse {
+  FoundRouteResponse(RequestId id) : RouteResponse(id) {}
+  virtual std::string Kind() const override {
+    return Responses::NoRouteResponse;
+  }
+};
+
+struct NoRouteResponse : public RouteResponse {
+  NoRouteResponse(RequestId id) : RouteResponse(id) {}
+  virtual std::string Kind() const override {
+    return Responses::NoRouteResponse;
   }
 };

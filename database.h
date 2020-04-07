@@ -27,6 +27,7 @@ public:
   std::vector<ResponsePtr> ExecuteQueries(const std::vector<QueryPtr> &queries);
   ResponsePtr ExecuteBusQuery(const BusQuery &query);
   ResponsePtr ExecuteStopQuery(const StopQuery &query);
+  ResponsePtr ExecuteRouteQuery(const RouteQuery &query);
 
   std::optional<double> GetStopDistance(const std::string &first,
                                         const std::string &second) const;
