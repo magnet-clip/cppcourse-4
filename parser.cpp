@@ -18,6 +18,8 @@ QueryPtr Parser::ParseQuery(const string &query_type) {
     return make_shared<BusQuery>(ParseBusQuery());
   } else if (query_type == Queries::StopQuery) {
     return make_shared<StopQuery>(ParseStopQuery());
+  } else if (query_type == Queries::RouteQuery) {
+    return make_shared<RouteQuery>(ParseRouteQuery());
   }
   return nullptr;
 }
@@ -135,6 +137,10 @@ StopQuery StringParser::ParseStopQuery() {
   return StopQuery(string(_line));
 }
 
+RouteQuery StringParser::ParseRouteQuery() {
+  throw domain_error("String parser does not support RouteQuery");
+}
+
 BusCommand JsonParser::ParseBusCommand() {
   auto data = _node.AsMap();
 
@@ -184,4 +190,12 @@ StopQuery JsonParser::ParseStopQuery() {
   auto name = data.at("name").AsString();
   auto id = static_cast<size_t>(data.at("id").AsInt());
   return {name, id};
+}
+
+RouteQuery JsonParser::ParseRouteQuery() {
+  auto data = _node.AsMap();
+  auto from = data.at("from").AsString();
+  auto to = data.at("to").AsString();
+  auto id = static_cast<size_t>(data.at("id").AsInt());
+  return {from, to, id};
 }

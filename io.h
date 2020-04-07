@@ -3,17 +3,13 @@
 #include "command.h"
 #include "database.h"
 #include "parser.h"
+#include "routing_settings.h"
 #include "serializer.h"
 
 #include <iostream>
 
 using CommandsAndQueries =
     std::pair<std::vector<CommandPtr>, std::vector<QueryPtr>>;
-
-struct RoutingSettings {
-  int bus_wait_time;
-  int bus_velocity;
-};
 
 struct Input {
   RoutingSettings settings;

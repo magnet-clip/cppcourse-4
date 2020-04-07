@@ -27,8 +27,8 @@ void RunUnitTests() {
 void TestFiles(const string &input, const string &output) {
   ifstream f_input(input);
   ifstream f_output(output);
-  if (!f_input.is_open()) {
-    throw domain_error("closed");
+  if (!f_input.is_open() || !f_output.is_open()) {
+    throw domain_error("Failed to open test files");
   }
   RunIntegrationTest(f_input, f_output);
 }

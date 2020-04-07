@@ -10,6 +10,7 @@
 #include "response.h"
 #include "route.h"
 #include "route_storage.h"
+#include "routing_settings.h"
 #include "stop.h"
 #include "stop_storage.h"
 
@@ -18,6 +19,7 @@
 
 class Database {
 public:
+  void UseSettings(RoutingSettings settings) { _settings = settings; }
   void ExecuteCommands(const std::vector<CommandPtr> &commands);
   void ExecuteBusCommand(const BusCommand &command);
   void ExecuteStopCommand(const StopCommand &command);
@@ -34,6 +36,7 @@ private:
   RouteStorage _route;
   StopStorage _stop;
   DistanceStorage _distance;
+  RoutingSettings _settings;
 
   HelicopterDistanceCalculator _helicopter_dist{Planet::Earth, _stop};
   GivenDistanceCalculator _given_dist{_distance};

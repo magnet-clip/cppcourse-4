@@ -101,7 +101,7 @@ Input JsonIo::ReadInput(std::istream &is) {
 void InAndOut(istream &is, ostream &os, Io &io) {
   const auto &[settings, commands, queries] = io.ReadInput(is);
   Database db;
-
+  db.UseSettings(settings);
   db.ExecuteCommands(commands);
   const auto &res = db.ExecuteQueries(queries);
   const auto &output = io.ProcessResponses(res);

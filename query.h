@@ -8,6 +8,7 @@
 struct Queries {
   static constexpr char const *BusQuery = "Bus";
   static constexpr char const *StopQuery = "Stop";
+  static constexpr char const *RouteQuery = "Route";
 };
 
 struct Query {
@@ -41,4 +42,17 @@ public:
 
 private:
   std::string _name;
+};
+
+class RouteQuery : public Query {
+public:
+  RouteQuery(const std::string &from, const std::string &to, RequestId id = 0)
+      : Query(id), _from(from), _to(to) {}
+  virtual std::string Kind() const override { return Queries::RouteQuery; };
+  std::string GetFrom() const { return _from; }
+  std::string GetTo() const { return _to; }
+
+private:
+  std::string _from;
+  std::string _to;
 };

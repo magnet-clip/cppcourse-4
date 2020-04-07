@@ -86,6 +86,7 @@ void TestJsonSample() {
 
 void Compare(const unordered_map<RequestId, Json::Node> &actual,
              const unordered_map<RequestId, Json::Node> &expected) {
+  ASSERT_EQUAL(actual.size(), expected.size());
   for (const auto &[id, actual_node] : actual) {
     ASSERT_EQUAL(expected.count(id), 1UL);
     ASSERT_EQUAL(actual_node, expected.at(id));
@@ -108,6 +109,7 @@ void RunIntegrationTest(istream &input, istream &output) {
   stringstream os;
   const auto &[settings, commands, queries] = json_io.ReadInput(input);
   Database db;
+  db.UseSettings(settings);
   db.ExecuteCommands(commands);
   const auto responses = db.ExecuteQueries(queries);
   unordered_map<RequestId, Json::Node> implied_responses;

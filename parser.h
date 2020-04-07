@@ -16,6 +16,7 @@ private:
   virtual StopCommand ParseStopCommand() = 0;
   virtual BusQuery ParseBusQuery() = 0;
   virtual StopQuery ParseStopQuery() = 0;
+  virtual RouteQuery ParseRouteQuery() = 0;
 };
 
 class StringParser : public Parser {
@@ -26,6 +27,7 @@ private:
   std::string_view _line;
   virtual BusCommand ParseBusCommand() override;
   virtual StopCommand ParseStopCommand() override;
+  virtual RouteQuery ParseRouteQuery() override;
   virtual BusQuery ParseBusQuery() override;
   virtual StopQuery ParseStopQuery() override;
 };
@@ -40,4 +42,5 @@ private:
   virtual StopCommand ParseStopCommand() override;
   virtual BusQuery ParseBusQuery() override;
   virtual StopQuery ParseStopQuery() override;
+  virtual RouteQuery ParseRouteQuery() override;
 };
