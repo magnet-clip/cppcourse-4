@@ -33,11 +33,17 @@ void TestFiles(const string &input, const string &output) {
   RunIntegrationTest(f_input, f_output);
 }
 
-void It1() { TestFiles("../test-1-input.json", "../test-1-output.json"); }
+void TestPartD() {
+  TestFiles("../test-d1-input.json", "../test-d1-output.json");
+}
+void TestPartE1() {
+  TestFiles("../test-e1-input.json", "../test-e1-output.json");
+}
 
 void RunIntegrationTests() {
   TestRunner tr;
-  RUN_TEST(tr, It1);
+  RUN_TEST(tr, TestPartD);
+  RUN_TEST(tr, TestPartE1);
 }
 
 int main() {
