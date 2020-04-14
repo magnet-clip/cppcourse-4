@@ -60,8 +60,8 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
 
     FoundBusResponse response(query.GetId());
     response.bus_name = bus_name;
-    response.num_stops = route.GetStopsCount();
-    response.num_unique_stops = route.GetUniqueStopsCount();
+    response.num_stops = route.StopsCount();
+    response.num_unique_stops = route.UniqueStopsCount();
     response.length = _given_dist.Calculate(route);
     response.curvature = response.length / _helicopter_dist.Calculate(route);
 
@@ -91,9 +91,13 @@ void Database::BuildMap() {
     info.circular = route.IsCircular();
     info.average_velocity = _settings.bus_velocity;
     info.average_wait_time = _settings.bus_wait_time;
-    // info.stops = route.GetRouteStopIds();
-    info.distances = {};
 
+    const auto &unique_stops = route.UniqueStops();
+    info.stops = {unique_stops.begin(), unique_stops.end()};
+
+    route.IterateByPair([&info, this](StopId first, StopId second) {
+      info.distances.push_back({first, second, _given_dist.GetDistance(first, second)});
+    });
     builder.AddRouteInfo(info);
   }
   _map = builder.Build();

@@ -39,8 +39,9 @@ private:
   BusStorage _bus;
   RouteStorage _route;
   StopStorage _stop;
-  std::optional<MapStorage> _map;
   DistanceStorage _distance;
+
+  std::optional<MapStorage> _map;
   RoutingSettings _settings;
 
   HelicopterDistanceCalculator _helicopter_dist{Planet::Earth, _stop};

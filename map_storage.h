@@ -4,6 +4,16 @@
 
 #include <vector>
 
+struct WaitStop {
+  StopId stop_id;
+  virtual bool ItsWait() const { return true; }
+};
+
+struct BusStop final : public WaitStop {
+  BusId bus_id;
+  virtual bool ItsWait() const override { return false; }
+};
+
 struct BusAndRouteInfo {
   BusId bus_id;
   bool circular;
