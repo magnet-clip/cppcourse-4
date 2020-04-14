@@ -103,6 +103,7 @@ void InAndOut(istream &is, ostream &os, Io &io) {
   Database db;
   db.UseSettings(settings);
   db.ExecuteCommands(commands);
+  db.BuildMap();
   const auto &res = db.ExecuteQueries(queries);
   const auto &output = io.ProcessResponses(res);
   bool first = true;

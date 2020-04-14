@@ -60,8 +60,8 @@ ResponsePtr Database::ExecuteBusQuery(const BusQuery &query) {
 
     FoundBusResponse response(query.GetId());
     response.bus_name = bus_name;
-    response.num_stops = route.GetStopIds().size();
-    response.num_unique_stops = route.UniqueStops().size();
+    response.num_stops = route.GetStopsCount();
+    response.num_unique_stops = route.GetUniqueStopsCount();
     response.length = _given_dist.Calculate(route);
     response.curvature = response.length / _helicopter_dist.Calculate(route);
 
@@ -83,10 +83,27 @@ ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
   }
 }
 
+void Database::BuildMap() {
+  MapStorageBuilder builder;
+  for (const auto &bus_id : _bus.GetBuses()) {
+    BusAndRouteInfo info;
+    const auto &route = _route.Get(bus_id);
+    info.circular = route.IsCircular();
+    info.average_velocity = _settings.bus_velocity;
+    info.average_wait_time = _settings.bus_wait_time;
+    // info.stops = route.GetRouteStopIds();
+    info.distances = {};
+
+    builder.AddRouteInfo(info);
+  }
+  _map = builder.Build();
+}
+
 ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
   const auto &from = _stop.TryFindByName(query.GetFrom());
   const auto &to = _stop.TryFindByName(query.GetTo());
   if (from != nullptr && to != nullptr) {
+
     return make_shared<FoundRouteResponse>(query.GetId());
   } else {
     return make_shared<NoRouteResponse>(query.GetId());

@@ -10,7 +10,66 @@
 #include <string>
 #include <unordered_map>
 
-template <class T> struct DistanceCalculator {
+template <typename T>
+class DistanceCalculator;
+
+template <typename T>
+class DistanceIterator;
+
+struct DistanceInfo {
+  StopId first;
+  StopId second;
+  double distance;
+};
+
+template <typename T>
+class DistanceLooper {
+public:
+  DistanceLooper(const Route &route, const DistanceCalculator<T> &calc) : _route(route), _calc(calc) {}
+  DistanceIterator<T> begin() const {
+    return {_route, 0, _calc};
+  }
+  DistanceIterator<T> end() const {
+    return {_route, _route.GetStopsCount(), _calc};
+  }
+
+private:
+  const Route &_route;
+  const DistanceCalculator<T> &_calc;
+};
+
+template <class T>
+class DistanceIterator {
+public:
+  DistanceIterator(const Route &route, size_t pos, const DistanceCalculator<T> &calc) : _stops(route.GetStopIds()), _pos(pos), _calc(calc) {}
+
+  DistanceInfo operator*() {
+    auto a = this->_calc.GetCurrent(_stops[_pos]);
+    auto b = _calc.GetCurrent(_stops[_pos + 1]);
+    auto d = _calc.GetDistance(a, b);
+    return {_stops[_pos], _stops[_pos + 1], 0};
+  }
+
+  DistanceIterator operator++() {
+    _pos++;
+    return *this;
+  }
+
+  operator int() const { return _pos; }
+
+private:
+  const std::vector<StopId> &_stops;
+  const DistanceCalculator<T> &_calc;
+  size_t _pos;
+};
+
+template <class T>
+struct DistanceCalculator {
+
+  DistanceLooper<T> GetDistance(const Route &route) const {
+    return {route, *this};
+  };
+
   double Calculate(const Route &route) {
     double res = 0.0;
 

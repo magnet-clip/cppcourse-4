@@ -63,6 +63,7 @@ void TestJsonSample() {
   stringstream os;
   const auto &[settings, commands, queries] = json_io.ReadInput(s);
   Database db;
+  db.BuildMap();
   db.ExecuteCommands(commands);
   const auto responses = db.ExecuteQueries(queries);
   const auto strings = string_io.ProcessResponses(responses);
@@ -110,6 +111,7 @@ void RunIntegrationTest(istream &input, istream &output) {
   const auto &[settings, commands, queries] = json_io.ReadInput(input);
   Database db;
   db.UseSettings(settings);
+  db.BuildMap();
   db.ExecuteCommands(commands);
   const auto responses = db.ExecuteQueries(queries);
   unordered_map<RequestId, Json::Node> implied_responses;

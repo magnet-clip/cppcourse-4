@@ -6,6 +6,7 @@
 #include "distance_calc.h"
 #include "distance_storage.h"
 #include "geomath.h"
+#include "map_storage.h"
 #include "query.h"
 #include "response.h"
 #include "route.h"
@@ -24,6 +25,8 @@ public:
   void ExecuteBusCommand(const BusCommand &command);
   void ExecuteStopCommand(const StopCommand &command);
 
+  void BuildMap();
+
   std::vector<ResponsePtr> ExecuteQueries(const std::vector<QueryPtr> &queries);
   ResponsePtr ExecuteBusQuery(const BusQuery &query);
   ResponsePtr ExecuteStopQuery(const StopQuery &query);
@@ -36,6 +39,7 @@ private:
   BusStorage _bus;
   RouteStorage _route;
   StopStorage _stop;
+  std::optional<MapStorage> _map;
   DistanceStorage _distance;
   RoutingSettings _settings;
 
