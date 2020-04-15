@@ -93,14 +93,14 @@ void Database::BuildMap() {
     info.average_wait_time = _settings.bus_wait_time;
 
     const auto &unique_stops = route.UniqueStops();
-    info.stops = {unique_stops.begin(), unique_stops.end()};
+    info.stops = {unique_stops.begin(), unique_stops.end()}; // TODO or keep the set?
 
     route.IterateByPair([&info, this](StopId first, StopId second) {
       info.distances.push_back({first, second, _given_dist.GetDistance(first, second)});
     });
     builder.AddRouteInfo(info);
   }
-  _map = builder.Build();
+  _map.emplace(builder.Build());
 }
 
 ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
