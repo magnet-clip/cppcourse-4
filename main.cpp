@@ -38,12 +38,12 @@ void TestPartE1() { TestFiles("test-e1-input.json", "test-e1-output.json"); }
 
 void RunIntegrationTests() {
   TestRunner tr;
-  RUN_TEST(tr, TestPartD);
+  // RUN_TEST(tr, TestPartD);
   RUN_TEST(tr, TestPartE1);
 }
 
 int main() {
-  RunUnitTests();
+  // RunUnitTests();
   RunIntegrationTests();
   JsonIo io;
   InAndOut(cin, cout, io);

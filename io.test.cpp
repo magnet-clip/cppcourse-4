@@ -111,8 +111,8 @@ void RunIntegrationTest(istream &input, istream &output) {
   const auto &[settings, commands, queries] = json_io.ReadInput(input);
   Database db;
   db.UseSettings(settings);
-  db.BuildMap();
   db.ExecuteCommands(commands);
+  db.BuildMap();
   const auto responses = db.ExecuteQueries(queries);
   unordered_map<RequestId, Json::Node> implied_responses;
   for (const auto &response : responses) {

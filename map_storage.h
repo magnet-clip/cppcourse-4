@@ -2,6 +2,7 @@
 
 #include "graph.h"
 #include "id.h"
+#include "router.h"
 
 #include <memory>
 #include <optional>
@@ -70,13 +71,13 @@ class MapStorage {
   friend class MapStorageBuilder;
 
 public:
-  const Graph::DirectedWeightedGraph<double> &Graph() const { return _graph; }
   const MapStopsStorage &MapStops() const { return _map_stops; }
+  const Graph::Router<double> &Router() const { return _router; }
 
 private:
-  MapStorage(Graph::DirectedWeightedGraph<double> graph, MapStopsStorage map_stops) : _graph(std::move(graph)),
+  MapStorage(Graph::DirectedWeightedGraph<double> graph, MapStopsStorage map_stops) : _router(std::move(graph)),
                                                                                       _map_stops(std::move(map_stops)) {}
-  const Graph::DirectedWeightedGraph<double> _graph;
+  Graph::Router<double> _router;
   const MapStopsStorage _map_stops;
 };
 
@@ -86,15 +87,10 @@ public:
   MapStorage Build();
 
 private:
-  void AddEdgeTemp(Graph::VertexId first, Graph::VertexId second, double time);
-  void AddEdge(Graph::VertexId first, Graph::VertexId second, double time);
-
   MapStopsStorage _map_stops;
 
   // temporary storage for edges, as we can't store them into graph directly
   std::vector<std::tuple<Graph::VertexId, Graph::VertexId, double>> _temp_edges;
-
-  std::unordered_map<Graph::EdgeId, Graph::Edge<double>> _edges;
 
   // graph has no default constructor, so wrap it in optional
   std::optional<Graph::DirectedWeightedGraph<double>> _graph;

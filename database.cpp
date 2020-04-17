@@ -88,6 +88,7 @@ void Database::BuildMap() {
   for (const auto &bus_id : _bus.GetBuses()) {
     BusAndRouteInfo info;
     const auto &route = _route.Get(bus_id);
+    info.bus_id = bus_id;
     info.circular = route.IsCircular();
     info.average_velocity = _settings.bus_velocity;
     info.average_wait_time = _settings.bus_wait_time;
@@ -107,8 +108,25 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
   const auto &from = _stop.TryFindByName(query.GetFrom());
   const auto &to = _stop.TryFindByName(query.GetTo());
   if (from != nullptr && to != nullptr) {
+    const auto &router = _map->Router();
+    const auto &stops = _map->MapStops();
 
-    return make_shared<FoundRouteResponse>(query.GetId());
+    // 1) Find VertexIds of WAIT_STOPs for from and to
+    auto from_wait_stop_vertex_id = stops.GetWaitStop(from->GetId());
+    auto to_wait_stop_vertex_id = stops.GetWaitStop(to->GetId());
+
+    // 2) Build route from WAIT_STOP to WAIT_STOP
+    // TODO router fails for some reason
+    const auto &route = router.BuildRoute(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
+
+    // 3) Trace route by edges and make a response
+    if (route) {
+      for (size_t i = 0; i < route->edge_count; i++) {
+      }
+      return make_shared<FoundRouteResponse>(query.GetId());
+    } else {
+      return make_shared<NoRouteResponse>(query.GetId());
+    }
   } else {
     return make_shared<NoRouteResponse>(query.GetId());
   }

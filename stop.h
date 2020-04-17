@@ -11,8 +11,9 @@
 
 class Stop {
 public:
-  Stop(const std::string &name) : _name(name) {}
+  Stop(StopId id, const std::string &name) : _id(id), _name(name) {}
   const std::string &GetName() const { return _name; }
+  const StopId &GetId() const { return _id; }
   virtual const GeoPoint &GetLocation() const {
     throw std::domain_error("Stop [" + _name + "] has no location specified");
   }
@@ -22,17 +23,15 @@ public:
   }
 
 private:
+  StopId _id;
   std::string _name;
   std::unordered_set<BusId> _buses;
 };
 
 class QualifiedStop : public Stop {
 public:
-  QualifiedStop(const Stop &preceder, GeoPoint location)
-      : Stop(preceder), _location(location) {}
-
-  QualifiedStop(const std::string &name, GeoPoint location)
-      : Stop(name), _location(location) {}
+  QualifiedStop(StopId id, const std::string &name, GeoPoint location)
+      : Stop(id, name), _location(location) {}
 
   virtual const GeoPoint &GetLocation() const override { return _location; }
 
