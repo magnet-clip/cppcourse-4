@@ -3,12 +3,12 @@
 using namespace std;
 using namespace Graph;
 
-void MapStorageBuilder::AddRouteInfo(const BusAndRouteInfo &info) {
+void MapStorage::AddRouteInfo(const BusAndRouteInfo &info) {
   for (StopId stop_id : info.stops) {
     // Create WAIT stops for each stop
-    VertexId wait_vertex_id = _map_stops.AddOrGetWaitStop(stop_id);
+    VertexId wait_vertex_id = AddOrGetWaitStop(stop_id);
     // Create BUS stops for each stop on this route
-    VertexId bus_stop_vertex_id = _map_stops.AddBusStop(info.bus_id, stop_id);
+    VertexId bus_stop_vertex_id = AddBusStop(info.bus_id, stop_id);
     // Add paths between BUS and WAIT stops with appropriate time
     _temp_edges.push_back({wait_vertex_id, bus_stop_vertex_id, info.average_wait_time});
     _temp_edges.push_back({bus_stop_vertex_id, wait_vertex_id, 0});
@@ -17,12 +17,12 @@ void MapStorageBuilder::AddRouteInfo(const BusAndRouteInfo &info) {
   // Add paths between adjacent ribs
   for (size_t i = 0; i < info.distances.size(); i++) {
     const auto &[first_stop_id, next_stop_id, distance] = info.distances[i];
-    VertexId first_vertex_id = _map_stops.GetBusStop(info.bus_id, first_stop_id);
+    VertexId first_vertex_id = GetBusStop(info.bus_id, first_stop_id);
     VertexId next_vertex_id;
     if (i == info.distances.size() - 1) {
-      next_vertex_id = _map_stops.GetWaitStop(next_stop_id);
+      next_vertex_id = GetWaitStop(next_stop_id);
     } else {
-      next_vertex_id = _map_stops.GetBusStop(info.bus_id, next_stop_id);
+      next_vertex_id = GetBusStop(info.bus_id, next_stop_id);
     }
 
     // Calculate times between BUS/BUS stops
@@ -30,18 +30,28 @@ void MapStorageBuilder::AddRouteInfo(const BusAndRouteInfo &info) {
   }
 }
 
-MapStorage MapStorageBuilder::Build() {
-  _graph = DirectedWeightedGraph<double>(_map_stops.TotalStopCount());
+void MapStorage::AddRoute(EdgeId edge_id, VertexId first_id, VertexId second_id) {
+  _stops_by_edge.insert({edge_id, {first_id, second_id}});
+}
+
+void MapStorage::BuildRouter() {
+  _graph.emplace(TotalStopCount());
   for (const auto &[first, second, time] : _temp_edges) {
     Edge<double> edge{first, second, time};
     auto edge_id = _graph->AddEdge(edge);
-    _map_stops.AddRoute(edge_id, first, second);
+    AddRoute(edge_id, first, second);
   }
-
-  return {*_graph, _map_stops};
+  // _temp_edges.clear(); // TODO
+  _router.emplace(_graph.value());
 }
 
-VertexId MapStopsStorage::AddOrGetWaitStop(StopId stop_id) {
+// void MapStorage::AddEdge(VertexId first_id, VertexId second_id, double weight) {
+//   Edge<double> edge{first_id, second_id, weight};
+//   auto edge_id = _graph.AddEdge(edge);
+//   _stops_by_edge.insert({edge_id, {first_id, second_id}});
+// }
+
+VertexId MapStorage::AddOrGetWaitStop(StopId stop_id) {
   auto it = _vertices_by_wait_stops.find(stop_id);
   if (it == _vertices_by_wait_stops.end()) {
     auto vertex_id = _stops_by_vertices.size();
@@ -53,7 +63,7 @@ VertexId MapStopsStorage::AddOrGetWaitStop(StopId stop_id) {
   }
 }
 
-VertexId MapStopsStorage::AddBusStop(BusId bus_id, StopId stop_id) {
+VertexId MapStorage::AddBusStop(BusId bus_id, StopId stop_id) {
   auto it = _vertices_by_bus_stops.find(bus_id);
   if (it == _vertices_by_bus_stops.end()) {
     auto insert_result = _vertices_by_bus_stops.insert({bus_id, {}});
@@ -67,14 +77,14 @@ VertexId MapStopsStorage::AddBusStop(BusId bus_id, StopId stop_id) {
   return vertex_id;
 }
 
-VertexId MapStopsStorage::GetWaitStop(StopId stop_id) const {
+VertexId MapStorage::GetWaitStop(StopId stop_id) const {
   return _vertices_by_wait_stops.at(stop_id);
 }
 
-VertexId MapStopsStorage::GetBusStop(BusId bus_id, StopId stop_id) const {
+VertexId MapStorage::GetBusStop(BusId bus_id, StopId stop_id) const {
   return _vertices_by_bus_stops.at(bus_id).at(stop_id);
 }
 
-size_t MapStopsStorage::TotalStopCount() const {
+size_t MapStorage::TotalStopCount() const {
   return _stops_by_vertices.size();
 }

@@ -84,7 +84,6 @@ ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
 }
 
 void Database::BuildMap() {
-  MapStorageBuilder builder;
   for (const auto &bus_id : _bus.GetBuses()) {
     BusAndRouteInfo info;
     const auto &route = _route.Get(bus_id);
@@ -99,24 +98,22 @@ void Database::BuildMap() {
     route.IterateByPair([&info, this](StopId first, StopId second) {
       info.distances.push_back({first, second, _given_dist.GetDistance(first, second)});
     });
-    builder.AddRouteInfo(info);
+    _map.AddRouteInfo(info);
   }
-  _map.emplace(builder.Build());
+  _map.BuildRouter();
 }
 
 ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
   const auto &from = _stop.TryFindByName(query.GetFrom());
   const auto &to = _stop.TryFindByName(query.GetTo());
   if (from != nullptr && to != nullptr) {
-    const auto &router = _map->Router();
-    const auto &stops = _map->MapStops();
+    const auto &router = _map.GetRouter();
 
     // 1) Find VertexIds of WAIT_STOPs for from and to
-    auto from_wait_stop_vertex_id = stops.GetWaitStop(from->GetId());
-    auto to_wait_stop_vertex_id = stops.GetWaitStop(to->GetId());
+    auto from_wait_stop_vertex_id = _map.GetWaitStop(from->GetId());
+    auto to_wait_stop_vertex_id = _map.GetWaitStop(to->GetId());
 
     // 2) Build route from WAIT_STOP to WAIT_STOP
-    // TODO router fails for some reason
     const auto &route = router.BuildRoute(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
 
     // 3) Trace route by edges and make a response

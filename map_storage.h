@@ -38,24 +38,6 @@ private:
   BusId _bus_id;
 };
 
-class MapStopsStorage {
-public:
-  Graph::VertexId AddOrGetWaitStop(StopId stop_id);
-  Graph::VertexId AddBusStop(BusId bus_id, StopId stop_id);
-  Graph::VertexId GetWaitStop(StopId stop_id) const;
-  Graph::VertexId GetBusStop(BusId bus_id, StopId stop_id) const;
-  void AddRoute(Graph::EdgeId edge_id, Graph::VertexId first_id, Graph::VertexId second_id) {
-    _stops_by_edge.insert({edge_id, {first_id, second_id}});
-  }
-  size_t TotalStopCount() const;
-
-private:
-  std::vector<std::shared_ptr<MapStop>> _stops_by_vertices;                                      // VertexId -> MapStop
-  std::unordered_map<StopId, Graph::VertexId> _vertices_by_wait_stops;                           // StopId -> VertexId
-  std::unordered_map<BusId, std::unordered_map<StopId, Graph::VertexId>> _vertices_by_bus_stops; // BusId -> StopId -> VertexId
-  std::unordered_map<Graph::EdgeId, std::pair<Graph::VertexId, Graph::VertexId>> _stops_by_edge; // EdgeId -> [VertexId, VertexId]
-};
-
 struct BusAndRouteInfo {
   BusId bus_id;
   bool circular;
@@ -65,33 +47,27 @@ struct BusAndRouteInfo {
   std::vector<std::tuple<StopId, StopId, double>> distances;
 };
 
-class MapStorageBuilder;
-
 class MapStorage {
-  friend class MapStorageBuilder;
-
-public:
-  const MapStopsStorage &MapStops() const { return _map_stops; }
-  const Graph::Router<double> &Router() const { return _router; }
-
-private:
-  MapStorage(Graph::DirectedWeightedGraph<double> graph, MapStopsStorage map_stops) : _router(std::move(graph)),
-                                                                                      _map_stops(std::move(map_stops)) {}
-  Graph::Router<double> _router;
-  const MapStopsStorage _map_stops;
-};
-
-class MapStorageBuilder {
 public:
   void AddRouteInfo(const BusAndRouteInfo &info);
-  MapStorage Build();
+  void BuildRouter();
+  Graph::Router<double> GetRouter() const { return _router.value(); }
+  Graph::VertexId GetWaitStop(StopId stop_id) const;
+  Graph::VertexId GetBusStop(BusId bus_id, StopId stop_id) const;
+  size_t TotalStopCount() const;
 
 private:
-  MapStopsStorage _map_stops;
+  Graph::VertexId AddOrGetWaitStop(StopId stop_id);
+  Graph::VertexId AddBusStop(BusId bus_id, StopId stop_id);
+  void AddRoute(Graph::EdgeId edge_id, Graph::VertexId first_id, Graph::VertexId second_id);
 
-  // temporary storage for edges, as we can't store them into graph directly
-  std::vector<std::tuple<Graph::VertexId, Graph::VertexId, double>> _temp_edges;
-
-  // graph has no default constructor, so wrap it in optional
+  std::optional<Graph::Router<double>> _router;
   std::optional<Graph::DirectedWeightedGraph<double>> _graph;
+
+  std::vector<std::shared_ptr<MapStop>> _stops_by_vertices;                                      // VertexId -> MapStop
+  std::unordered_map<StopId, Graph::VertexId> _vertices_by_wait_stops;                           // StopId -> VertexId
+  std::unordered_map<BusId, std::unordered_map<StopId, Graph::VertexId>> _vertices_by_bus_stops; // BusId -> StopId -> VertexId
+  std::unordered_map<Graph::EdgeId, std::pair<Graph::VertexId, Graph::VertexId>> _stops_by_edge; // EdgeId -> [VertexId, VertexId]
+
+  std::vector<std::tuple<Graph::VertexId, Graph::VertexId, double>> _temp_edges;
 };

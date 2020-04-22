@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
-#include <iostream>
 #include <iterator>
 #include <optional>
 #include <unordered_map>
@@ -104,7 +103,6 @@ Router<Weight>::Router(const Graph &graph)
 
 template <typename Weight>
 std::optional<typename Router<Weight>::RouteInfo> Router<Weight>::BuildRoute(VertexId from, VertexId to) const {
-  std::cout << graph_.GetEdgeCount() << std::endl;
   const auto &route_internal_data = routes_internal_data_[from][to];
   if (!route_internal_data) {
     return std::nullopt;
