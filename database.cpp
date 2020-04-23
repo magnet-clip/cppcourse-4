@@ -154,8 +154,25 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
 
     } else if (!prev_stop->IsWait() && !curr_stop->IsWait()) {
       // Bus Stop -> Bus Stop
-      // TODO check bus is same
-      // TODO add
+      auto prev_stop_id = prev_stop->GetStopId();
+      auto curr_stop_id = curr_stop->GetStopId();
+      if (prev_stop_id == curr_stop_id) {
+        throw domain_error("Should have moved to another stop");
+      }
+
+      const auto &prev_bus_stop = static_cast<const BusStop &>(*prev_stop);
+      const auto &curr_bus_stop = static_cast<const BusStop &>(*curr_stop);
+      if (prev_bus_stop.GetBusId() != curr_bus_stop.GetBusId()) {
+        throw domain_error("Can't switch bus between stops");
+      }
+
+      BusRouteItem bus;
+      bus.time = time;
+      bus.span_count = 1;
+      bus.bus_name = _bus.GetName(curr_bus_stop.GetBusId());
+
+      // TODO check if we have already traveled by this bus and join if necessary
+      response.items.push_back(make_shared<BusRouteItem>(bus));
     } else {
       // Bus Stop -> Wait Stop
       // TODO check that time is 0, and ignore it
