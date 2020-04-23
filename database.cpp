@@ -106,6 +106,7 @@ void Database::BuildMap() {
 }
 
 ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
+  cout << "~~~~~~~" << endl;
   const auto &from = _stop.TryFindByName(query.GetFrom());
   const auto &to = _stop.TryFindByName(query.GetTo());
   if (from == nullptr || to == nullptr) {
@@ -117,6 +118,8 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
   // 1) Find VertexIds of WAIT_STOPs for from and to
   auto from_wait_stop_vertex_id = _map.GetWaitStop(from->GetId());
   auto to_wait_stop_vertex_id = _map.GetWaitStop(to->GetId());
+  cout << from_wait_stop_vertex_id << " ===> " << to_wait_stop_vertex_id << endl;
+  cout << "~~~~~~~" << endl;
 
   // 2) Build route from WAIT_STOP to WAIT_STOP
   const auto &route = router.BuildRoute(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
@@ -133,6 +136,7 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
     const auto [prev_vertex_id, curr_vertex_id, time] = _map.GetGraph().GetEdge(edge_id);
     const auto prev_stop = _map.GetStopByVertex(prev_vertex_id);
     const auto curr_stop = _map.GetStopByVertex(curr_vertex_id);
+    cout << prev_vertex_id << " -> " << curr_vertex_id << endl;
 
     if (prev_stop->IsWait() && curr_stop->IsWait()) {
       // Wait Stop -> Wait Stop
@@ -166,13 +170,19 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
         throw domain_error("Can't switch bus between stops");
       }
 
-      BusRouteItem bus;
-      bus.time = time;
-      bus.span_count = 1;
-      bus.bus_name = _bus.GetName(curr_bus_stop.GetBusId());
+      if (response.items.back()->Kind() == RouteItemType::Bus) {
+        auto &last_bus = static_cast<BusRouteItem &>(*response.items.back());
+        last_bus.time += time;
+        last_bus.span_count += 1;
+      } else {
+        BusRouteItem bus;
+        bus.time = time;
+        bus.span_count = 1;
+        bus.bus_name = _bus.GetName(curr_bus_stop.GetBusId());
 
-      // TODO check if we have already traveled by this bus and join if necessary
-      response.items.push_back(make_shared<BusRouteItem>(bus));
+        response.items.push_back(make_shared<BusRouteItem>(bus));
+      }
+
     } else {
       // Bus Stop -> Wait Stop
       // TODO check that time is 0, and ignore it
