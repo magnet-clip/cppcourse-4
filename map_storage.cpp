@@ -10,7 +10,8 @@ void MapStorage::AddRouteInfo(const BusAndRouteInfo &info) {
     // Create BUS stops for each stop on this route
     VertexId bus_stop_vertex_id = AddBusStop(info.bus_id, stop_id);
     // Add paths between BUS and WAIT stops with appropriate time
-    _temp_edges.push_back({wait_vertex_id, bus_stop_vertex_id, info.average_wait_time});
+    _temp_edges.push_back(
+        {wait_vertex_id, bus_stop_vertex_id, info.average_wait_time});
     _temp_edges.push_back({bus_stop_vertex_id, wait_vertex_id, 0});
   }
 
@@ -26,7 +27,8 @@ void MapStorage::AddRouteInfo(const BusAndRouteInfo &info) {
     }
 
     // Calculate times between BUS/BUS stops
-    _temp_edges.push_back({first_vertex_id, next_vertex_id, distance / info.average_velocity});
+    _temp_edges.push_back({first_vertex_id, next_vertex_id,
+                           (distance / info.average_velocity) * (6.0 / 100.0)});
   }
 }
 
@@ -61,7 +63,8 @@ VertexId MapStorage::AddBusStop(BusId bus_id, StopId stop_id) {
 
   auto vertex_id = _stops_by_vertices.size();
   it->second.insert({stop_id, vertex_id});
-  _stops_by_vertices.push_back(make_shared<BusStop>(vertex_id, bus_id, stop_id));
+  _stops_by_vertices.push_back(
+      make_shared<BusStop>(vertex_id, bus_id, stop_id));
 
   return vertex_id;
 }
@@ -74,9 +77,7 @@ VertexId MapStorage::GetBusStop(BusId bus_id, StopId stop_id) const {
   return _vertices_by_bus_stops.at(bus_id).at(stop_id);
 }
 
-size_t MapStorage::TotalStopCount() const {
-  return _stops_by_vertices.size();
-}
+size_t MapStorage::TotalStopCount() const { return _stops_by_vertices.size(); }
 
 shared_ptr<MapStop> MapStorage::GetStopByVertex(VertexId vertex_id) const {
   return _stops_by_vertices[vertex_id];
