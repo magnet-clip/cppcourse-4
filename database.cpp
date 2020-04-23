@@ -156,7 +156,6 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
       wait.time = time;
 
       response.items.push_back(make_shared<WaitRouteItem>(wait));
-
     } else if (!prev_stop->IsWait() && !curr_stop->IsWait()) {
       // Bus Stop -> Bus Stop
       auto prev_stop_id = prev_stop->GetStopId();
@@ -183,10 +182,31 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
 
         response.items.push_back(make_shared<BusRouteItem>(bus));
       }
-
-    } else {
+    } else if (!prev_stop->IsWait() && curr_stop->IsWait()) {
       // Bus Stop -> Wait Stop
-      // TODO check that time is 0, and ignore it
+      if (time != 0) {
+        // There can be a case when the time not zero - circular routes
+        auto prev_stop_id = prev_stop->GetStopId();
+        auto curr_stop_id = curr_stop->GetStopId();
+        if (prev_stop_id == curr_stop_id) {
+          throw domain_error("Should have moved to another stop");
+        }
+
+        const auto &prev_bus_stop = static_cast<const BusStop &>(*prev_stop);
+
+        if (response.items.back()->Kind() == RouteItemType::Bus) {
+          auto &last_bus = static_cast<BusRouteItem &>(*response.items.back());
+          last_bus.time += time;
+          last_bus.span_count += 1;
+        } else {
+          BusRouteItem bus;
+          bus.time = time;
+          bus.span_count = 1;
+          bus.bus_name = _bus.GetName(prev_bus_stop.GetBusId());
+
+          response.items.push_back(make_shared<BusRouteItem>(bus));
+        }
+      }
     }
   }
   return make_shared<FoundRouteResponse>(response);
