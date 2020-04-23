@@ -95,10 +95,12 @@ void Database::BuildMap() {
     info.average_wait_time = _settings.bus_wait_time;
 
     const auto &unique_stops = route.UniqueStops();
-    info.stops = {unique_stops.begin(), unique_stops.end()}; // TODO or keep the set?
+    info.stops = {unique_stops.begin(),
+                  unique_stops.end()}; // TODO or keep the set?
 
     route.IterateByPair([&info, this](StopId first, StopId second) {
-      info.distances.push_back({first, second, _given_dist.GetDistance(first, second)});
+      info.distances.push_back(
+          {first, second, _given_dist.GetDistance(first, second)});
     });
     _map.AddRouteInfo(info);
   }
@@ -106,7 +108,6 @@ void Database::BuildMap() {
 }
 
 ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
-  cout << "~~~~~~~" << endl;
   const auto &from = _stop.TryFindByName(query.GetFrom());
   const auto &to = _stop.TryFindByName(query.GetTo());
   if (from == nullptr || to == nullptr) {
@@ -118,11 +119,10 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
   // 1) Find VertexIds of WAIT_STOPs for from and to
   auto from_wait_stop_vertex_id = _map.GetWaitStop(from->GetId());
   auto to_wait_stop_vertex_id = _map.GetWaitStop(to->GetId());
-  cout << from_wait_stop_vertex_id << " ===> " << to_wait_stop_vertex_id << endl;
-  cout << "~~~~~~~" << endl;
 
   // 2) Build route from WAIT_STOP to WAIT_STOP
-  const auto &route = router.BuildRoute(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
+  const auto &route =
+      router.BuildRoute(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
 
   if (!route) {
     return make_shared<NoRouteResponse>(query.GetId());
@@ -132,11 +132,12 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
   FoundRouteResponse response(query.GetId());
   response.total_time = route->weight;
 
-  for (EdgeId edge_id = 0; edge_id < route->edge_count; edge_id++) {
-    const auto [prev_vertex_id, curr_vertex_id, time] = _map.GetGraph().GetEdge(edge_id);
+  for (size_t idx = 0; idx < route->edge_count; idx++) {
+    EdgeId edge_id = router.GetRouteEdge(route->id, idx);
+    const auto [prev_vertex_id, curr_vertex_id, time] =
+        _map.GetGraph().GetEdge(edge_id);
     const auto prev_stop = _map.GetStopByVertex(prev_vertex_id);
     const auto curr_stop = _map.GetStopByVertex(curr_vertex_id);
-    cout << prev_vertex_id << " -> " << curr_vertex_id << endl;
 
     if (prev_stop->IsWait() && curr_stop->IsWait()) {
       // Wait Stop -> Wait Stop
