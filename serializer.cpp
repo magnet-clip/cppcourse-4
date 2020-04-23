@@ -105,9 +105,35 @@ Json::Node GetJsonNode(const FoundStopResponse &response) {
 Json::Node GetJsonNode(const NoRouteResponse &response) {
   return GetNotFoundNode(response.GetId());
 }
-
+Json::Node GetJsonNode(const BusRouteItem &item) {
+  map<string, Json::Node> res;
+  res.insert({"bus", {item.bus_name}});
+  res.insert({"span_count", {item.span_count}});
+  res.insert({"time", {item.time}});
+  res.insert({"type", {item.Kind()}});
+  return res;
+}
+Json::Node GetJsonNode(const WaitRouteItem &item) {
+  map<string, Json::Node> res;
+  res.insert({"stop_name", {item.stop_name}});
+  res.insert({"time", {item.time}});
+  res.insert({"type", {item.Kind()}});
+  return res;
+}
 Json::Node GetJsonNode(const FoundRouteResponse &response) {
   map<string, Json::Node> res;
   res.insert({"request_id", {response.GetId()}});
+  res.insert({"total_time", {response.total_time}});
+  vector<Json::Node> items;
+  for (const auto &item : response.items) {
+    if (item->Kind() == RouteItemType::Bus) {
+      items.push_back(GetJsonNode(static_cast<BusRouteItem &>(*item)));
+    } else if (item->Kind() == RouteItemType::Wait) {
+      items.push_back(GetJsonNode(static_cast<WaitRouteItem &>(*item)));
+    } else {
+      throw domain_error("Unknown item type");
+    }
+  }
+  res.insert({"items", {items}});
   return res;
 }

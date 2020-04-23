@@ -1,5 +1,9 @@
 #pragma once
+
 #include "id.h"
+#include "map_stop.h"
+#include "route_item.h"
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -80,6 +84,8 @@ struct RouteResponse : public Response {
 
 struct FoundRouteResponse : public RouteResponse {
   FoundRouteResponse(RequestId id) : RouteResponse(id) {}
+  std::vector<std::shared_ptr<RouteItem>> items;
+  double total_time;
   virtual std::string Kind() const override {
     return Responses::FoundRouteResponse;
   }

@@ -1,6 +1,8 @@
 #include "database.h"
-#include <set>
+#include "graph.h"
+
 using namespace std;
+using namespace Graph;
 
 void Database::ExecuteCommands(const std::vector<CommandPtr> &commands) {
   for (const auto &command_ptr : commands) {
@@ -106,27 +108,60 @@ void Database::BuildMap() {
 ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
   const auto &from = _stop.TryFindByName(query.GetFrom());
   const auto &to = _stop.TryFindByName(query.GetTo());
-  if (from != nullptr && to != nullptr) {
-    const auto &router = _map.GetRouter();
-
-    // 1) Find VertexIds of WAIT_STOPs for from and to
-    auto from_wait_stop_vertex_id = _map.GetWaitStop(from->GetId());
-    auto to_wait_stop_vertex_id = _map.GetWaitStop(to->GetId());
-
-    // 2) Build route from WAIT_STOP to WAIT_STOP
-    const auto &route = router.BuildRoute(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
-
-    // 3) Trace route by edges and make a response
-    if (route) {
-      for (size_t i = 0; i < route->edge_count; i++) {
-      }
-      return make_shared<FoundRouteResponse>(query.GetId());
-    } else {
-      return make_shared<NoRouteResponse>(query.GetId());
-    }
-  } else {
+  if (from == nullptr || to == nullptr) {
     return make_shared<NoRouteResponse>(query.GetId());
   }
+
+  const auto &router = _map.GetRouter();
+
+  // 1) Find VertexIds of WAIT_STOPs for from and to
+  auto from_wait_stop_vertex_id = _map.GetWaitStop(from->GetId());
+  auto to_wait_stop_vertex_id = _map.GetWaitStop(to->GetId());
+
+  // 2) Build route from WAIT_STOP to WAIT_STOP
+  const auto &route = router.BuildRoute(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
+
+  if (!route) {
+    return make_shared<NoRouteResponse>(query.GetId());
+  }
+
+  // 3) Trace route by edges and make a response
+  FoundRouteResponse response(query.GetId());
+  response.total_time = route->weight;
+
+  for (EdgeId edge_id = 0; edge_id < route->edge_count; edge_id++) {
+    const auto [prev_vertex_id, curr_vertex_id, time] = _map.GetGraph().GetEdge(edge_id);
+    const auto prev_stop = _map.GetStopByVertex(prev_vertex_id);
+    const auto curr_stop = _map.GetStopByVertex(curr_vertex_id);
+
+    if (prev_stop->IsWait() && curr_stop->IsWait()) {
+      // Wait Stop -> Wait Stop
+      throw domain_error("Two wait stops in row");
+    } else if (prev_stop->IsWait() && !curr_stop->IsWait()) {
+      // Wait Stop -> Bus Stop
+      auto prev_stop_id = prev_stop->GetStopId();
+      auto curr_stop_id = curr_stop->GetStopId();
+      if (prev_stop_id != curr_stop_id) {
+        throw domain_error("Can't move from wait stop to another bus stop");
+      }
+      auto prev_stop = _stop.Get(prev_stop_id);
+
+      WaitRouteItem wait;
+      wait.stop_name = prev_stop->GetName();
+      wait.time = time;
+
+      response.items.push_back(make_shared<WaitRouteItem>(wait));
+
+    } else if (!prev_stop->IsWait() && !curr_stop->IsWait()) {
+      // Bus Stop -> Bus Stop
+      // TODO check bus is same
+      // TODO add
+    } else {
+      // Bus Stop -> Wait Stop
+      // TODO check that time is 0, and ignore it
+    }
+  }
+  return make_shared<FoundRouteResponse>(response);
 }
 
 optional<double> Database::GetStopDistance(const std::string &first,
