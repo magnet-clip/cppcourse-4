@@ -36,12 +36,14 @@ void TestFiles(const string &input, const string &output) {
 void TestPartD() { TestFiles("test-d1-input.json", "test-d1-output.json"); }
 void TestPartE1() { TestFiles("test-e1-input.json", "test-e1-output.json"); }
 void TestPartE2() { TestFiles("test-e2-input.json", "test-e2-output.json"); }
+void TestPartE3() { TestFiles("test-e3-input.json", "test-e3-output.json"); }
 
 void RunIntegrationTests() {
   TestRunner tr;
   RUN_TEST(tr, TestPartD);
   RUN_TEST(tr, TestPartE1);
   RUN_TEST(tr, TestPartE2);
+  RUN_TEST(tr, TestPartE3);
 }
 
 int main() {

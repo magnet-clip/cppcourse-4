@@ -4,6 +4,7 @@
 #include "json.h"
 #include "test_runner.h"
 
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
@@ -86,11 +87,56 @@ void TestJsonSample() {
 }
 
 void Compare(const unordered_map<RequestId, Json::Node> &actual,
-             const unordered_map<RequestId, Json::Node> &expected) {
+             const unordered_map<RequestId, Json::Node> &expected,
+             set<int> route_request_ids) {
   ASSERT_EQUAL(actual.size(), expected.size());
   for (const auto &[id, actual_node] : actual) {
     ASSERT_EQUAL(expected.count(id), 1UL);
-    ASSERT_EQUAL(actual_node, expected.at(id));
+    const auto &expected_node = expected.at(id);
+
+    if (route_request_ids.count(id) /* && id != 5 */) {
+      const auto &actual_map = actual_node.AsMap();
+      const auto &expected_map = expected_node.AsMap();
+
+      if (actual_map.count("error_message")) {
+        const auto &actual_msg = actual_map.at("error_message").AsString();
+        const auto &expected_msg = expected_map.at("error_message").AsString();
+        ASSERT_EQUAL(actual_msg, expected_msg);
+      } else {
+        const auto actual_time = actual_map.at("total_time").AsDouble();
+        const auto expected_time = expected_map.at("total_time").AsDouble();
+
+        ASSERT(fabs(actual_time - expected_time) < 0.001);
+
+        const auto &actual_items = actual_map.at("items").AsArray();
+        const auto &expected_items = expected_map.at("items").AsArray();
+        ASSERT_EQUAL(actual_items.size(), expected_items.size());
+
+        for (size_t i = 0; i < actual_items.size(); i++) {
+          const auto &actual_record = actual_items[i].AsMap();
+          const auto &expected_record = expected_items[i].AsMap();
+
+          const auto &actual_type = actual_record.at("type").AsString();
+          const auto &expected_type = expected_record.at("type").AsString();
+          ASSERT_EQUAL(actual_type, expected_type);
+
+          if (actual_type == "Wait") {
+            ASSERT_EQUAL(actual_record, expected_record);
+          } else {
+            const auto actual_spans = actual_record.at("span_count");
+            const auto expected_spans = expected_record.at("span_count");
+            ASSERT_EQUAL(actual_spans, expected_spans);
+
+            const auto actual_item_time = actual_record.at("time");
+            const auto expected_item_time = expected_record.at("time");
+            ASSERT_EQUAL(actual_item_time, expected_item_time);
+          }
+        }
+      }
+    } else {
+
+      ASSERT_EQUAL(actual_node, expected_node);
+    }
   }
 }
 
@@ -109,18 +155,27 @@ void RunIntegrationTest(istream &input, istream &output) {
   JsonIo json_io;
   stringstream os;
   const auto &[settings, commands, queries] = json_io.ReadInput(input);
+
+  // Save route request ids
+  set<int> route_requests_ids;
+  for (const auto &query : queries) {
+    if (query->Kind() == Queries::RouteQuery) {
+      route_requests_ids.insert(query->GetId());
+    }
+  }
+
   Database db;
   db.UseSettings(settings);
   db.ExecuteCommands(commands);
   db.BuildMap();
   const auto responses = db.ExecuteQueries(queries);
-  unordered_map<RequestId, Json::Node> implied_responses;
+  unordered_map<RequestId, Json::Node> correct_responses;
   for (const auto &response : responses) {
     const auto &node = json_io.ResponseToJsonNode(response);
-    implied_responses.insert({response->GetId(), node});
+    correct_responses.insert({response->GetId(), node});
   }
 
   const auto expected_responses = ReadExpectedResponsesFromJson(output);
 
-  Compare(implied_responses, expected_responses);
+  Compare(correct_responses, expected_responses, route_requests_ids);
 }
