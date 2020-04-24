@@ -94,19 +94,23 @@ void Compare(const unordered_map<RequestId, Json::Node> &actual,
     ASSERT_EQUAL(expected.count(id), 1UL);
     const auto &expected_node = expected.at(id);
 
-    if (route_request_ids.count(id) /* && id != 5 */) {
+    if (!(actual_node == expected_node)) {
+      cout << "Requese id " << id << endl;
+      cout << "Actual" << endl << actual_node << endl;
+      cout << "Expected" << endl << expected_node << endl;
+    }
+    if (route_request_ids.count(id)) {
       const auto &actual_map = actual_node.AsMap();
       const auto &expected_map = expected_node.AsMap();
 
       if (actual_map.count("error_message")) {
-        const auto &actual_msg = actual_map.at("error_message").AsString();
-        const auto &expected_msg = expected_map.at("error_message").AsString();
+        const auto &actual_msg = actual_map.at("error_message");
+        const auto &expected_msg = expected_map.at("error_message");
         ASSERT_EQUAL(actual_msg, expected_msg);
       } else {
-        const auto actual_time = actual_map.at("total_time").AsDouble();
-        const auto expected_time = expected_map.at("total_time").AsDouble();
-
-        ASSERT(fabs(actual_time - expected_time) < 0.001);
+        const auto actual_time = actual_map.at("total_time");
+        const auto expected_time = expected_map.at("total_time");
+        ASSERT_EQUAL(actual_time, expected_time);
 
         const auto &actual_items = actual_map.at("items").AsArray();
         const auto &expected_items = expected_map.at("items").AsArray();
@@ -134,7 +138,6 @@ void Compare(const unordered_map<RequestId, Json::Node> &actual,
         }
       }
     } else {
-
       ASSERT_EQUAL(actual_node, expected_node);
     }
   }
