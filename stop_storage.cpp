@@ -7,12 +7,14 @@ StopId StopStorage::AddQualifiedStop(const string &stop_name,
   const auto it = _stop_ids.find(stop_name);
   if (it != _stop_ids.end()) {
     auto stop_id = it->second;
-    const auto stop_ptr = make_shared<QualifiedStop>(stop_id, stop_name, location);
+    const auto stop_ptr =
+        make_shared<QualifiedStop>(stop_id, stop_name, location);
     _stops[stop_id] = stop_ptr;
     return stop_id;
   } else {
     auto stop_id = _stops.size();
-    const auto stop_ptr = make_shared<QualifiedStop>(stop_id, stop_name, location);
+    const auto stop_ptr =
+        make_shared<QualifiedStop>(stop_id, stop_name, location);
     _stops.push_back(stop_ptr);
     _stop_ids.insert({stop_name, stop_id});
     return stop_id;

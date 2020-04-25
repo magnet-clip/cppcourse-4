@@ -94,9 +94,7 @@ void Database::BuildMap() {
     info.average_velocity = _settings.bus_velocity;
     info.average_wait_time = _settings.bus_wait_time;
 
-    const auto &unique_stops = route.UniqueStops();
-    info.stops = {unique_stops.begin(),
-                  unique_stops.end()}; // TODO or keep the set?
+    info.stops = route.Stops();
 
     route.IterateByPair([&info, this](StopId first, StopId second) {
       info.distances.push_back(
