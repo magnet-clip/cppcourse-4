@@ -92,8 +92,6 @@ void Database::BuildMap() {
     info.bus_id = bus_id;
     info.circular = route.IsCircular();
     info.average_velocity = _settings.bus_velocity;
-    info.average_wait_time = _settings.bus_wait_time;
-
     info.stops = route.Stops();
 
     route.IterateByPair([&info, this](StopId first, StopId second) {
@@ -165,7 +163,7 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
       const auto &prev_bus_stop = static_cast<const BusStop &>(*prev_stop);
       const auto &curr_bus_stop = static_cast<const BusStop &>(*curr_stop);
       if (prev_bus_stop.GetBusId() != curr_bus_stop.GetBusId()) {
-        throw domain_error("Can't switch bus between stops");
+        throw domain_error("Can't switch bus between bus stops");
       }
 
       if (response.items.back()->Kind() == RouteItemType::Bus) {

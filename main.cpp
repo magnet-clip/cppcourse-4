@@ -37,9 +37,12 @@ void TestPartD() { TestFiles("d", "test-d1-input.json", "test-d1-output.json"); 
 void TestPartE1() { TestFiles("e1", "test-e1-input.json", "test-e1-output.json"); }
 void TestPartE2() { TestFiles("e2", "test-e2-input.json", "test-e2-output.json"); }
 void TestPartE3() { TestFiles("e3", "test-e3-input.json", "test-e3-output.json"); }
+void TestPartF() { TestFiles("all", "transport-input4.json", "transport-output4.json"); }
 
 void RunIntegrationTests() {
   TestRunner tr;
+  RUN_TEST(tr, TestPartF);
+  RUN_TEST(tr, TestPartF);
   RUN_TEST(tr, TestPartD);
   RUN_TEST(tr, TestPartE1);
   RUN_TEST(tr, TestPartE2);
@@ -47,8 +50,8 @@ void RunIntegrationTests() {
 }
 
 int main() {
-  RunUnitTests();
-  RunIntegrationTests();
+  // RunUnitTests();
+  // RunIntegrationTests();
   JsonIo io;
   InAndOut(cin, cout, io);
   return 0;

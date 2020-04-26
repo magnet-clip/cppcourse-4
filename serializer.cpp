@@ -17,8 +17,12 @@ string Serializer::Serialize(ResponsePtr response) const {
     return Serialize(static_cast<const FoundStopResponse &>(*response));
   } else if (response->Kind() == Responses::NoStopResponse) {
     return Serialize(static_cast<const NoStopResponse &>(*response));
+  } else if (response->Kind() == Responses::FoundRouteResponse) {
+    return Serialize(static_cast<const FoundRouteResponse &>(*response));
+  } else if (response->Kind() == Responses::NoRouteResponse) {
+    return Serialize(static_cast<const NoRouteResponse &>(*response));
   } else {
-    throw domain_error(response->Kind());
+    throw domain_error("Unexpected response kind " + response->Kind());
   }
 }
 
