@@ -102,7 +102,7 @@ void Database::BuildMap() {
     });
     _map.AddRouteInfo(info);
   }
-  _map.BuildRouter();
+  _map.BuildRouter(_settings.bus_wait_time);
 }
 
 ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {

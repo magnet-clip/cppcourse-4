@@ -28,7 +28,7 @@ class MapStorage {
 
 public:
   void AddRouteInfo(const BusAndRouteInfo &info);
-  void BuildRouter();
+  void BuildRouter(double average_wait_time);
 
   VertexId GetWaitStop(StopId stop_id) const;
   size_t TotalStopCount() const;
@@ -46,8 +46,7 @@ public:
   }
 
 private:
-  VertexId
-  AddWaitStop(StopId stop_id);
+  VertexId AddOrGetWaitStop(StopId stop_id);
   VertexId AddBusStop(BusId bus_id, StopId stop_id);
 
   std::optional<Graph::Router<double>> _router;

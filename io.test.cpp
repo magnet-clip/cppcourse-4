@@ -5,6 +5,7 @@
 #include "test_runner.h"
 
 #include <cmath>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
@@ -170,21 +171,25 @@ void RunIntegrationTest(string name, istream &input, istream &output) {
   }
 
   Database db;
-  db.UseSettings(settings);
-  db.ExecuteCommands(commands);
-  db.BuildMap();
-  const auto responses = db.ExecuteQueries(queries);
-  unordered_map<RequestId, Json::Node> correct_responses;
-  for (const auto &response : responses) {
-    const auto &node = json_io.ResponseToJsonNode(response);
-    correct_responses.insert({response->GetId(), node});
-  }
-
-  const auto expected_responses = ReadExpectedResponsesFromJson(output);
   try {
+    db.UseSettings(settings);
+    db.ExecuteCommands(commands);
+    db.BuildMap();
+    const auto responses = db.ExecuteQueries(queries);
+    unordered_map<RequestId, Json::Node> correct_responses;
+    for (const auto &response : responses) {
+      const auto &node = json_io.ResponseToJsonNode(response);
+      correct_responses.insert({response->GetId(), node});
+    }
+
+    const auto expected_responses = ReadExpectedResponsesFromJson(output);
     Compare(correct_responses, expected_responses, route_requests_ids);
   } catch (...) {
-    cout << db.SerializeMap() << endl;
+    ofstream out;
+    out.open("../" + name + ".dot");
+    out << db.SerializeMap();
+    out.close();
+    cout << "Map file written to " << name << endl;
     throw;
   }
 }

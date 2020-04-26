@@ -40,14 +40,14 @@ void TestPartE3() { TestFiles("e3", "test-e3-input.json", "test-e3-output.json")
 
 void RunIntegrationTests() {
   TestRunner tr;
-  // RUN_TEST(tr, TestPartD);
-  // RUN_TEST(tr, TestPartE1);
+  RUN_TEST(tr, TestPartD);
+  RUN_TEST(tr, TestPartE1);
   RUN_TEST(tr, TestPartE2);
-  // RUN_TEST(tr, TestPartE3);
+  RUN_TEST(tr, TestPartE3);
 }
 
 int main() {
-  // RunUnitTests();
+  RunUnitTests();
   RunIntegrationTests();
   JsonIo io;
   InAndOut(cin, cout, io);
