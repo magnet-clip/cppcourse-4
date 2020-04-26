@@ -29,16 +29,25 @@ class MapStorage {
 public:
   void AddRouteInfo(const BusAndRouteInfo &info);
   void BuildRouter();
-  const Graph::Router<double> &GetRouter() const { return _router.value(); }
-  const Graph::DirectedWeightedGraph<double> &GetGraph() const {
-    return _graph.value();
-  }
+
   VertexId GetWaitStop(StopId stop_id) const;
   size_t TotalStopCount() const;
   std::shared_ptr<MapStop> GetStopByVertex(VertexId vertex_id) const;
 
+  const std::unordered_map<StopId, std::unordered_map<BusId, VertexIdSet>> &GetVerticesByBusStops() const {
+    return _vertices_by_bus_stops;
+  }
+  const std::unordered_map<StopId, VertexId> &GetVerticesByWaitStops() const {
+    return _vertices_by_wait_stops;
+  }
+  const Graph::Router<double> &GetRouter() const { return _router.value(); }
+  const Graph::DirectedWeightedGraph<double> &GetGraph() const {
+    return _graph.value();
+  }
+
 private:
-  VertexId AddWaitStop(StopId stop_id);
+  VertexId
+  AddWaitStop(StopId stop_id);
   VertexId AddBusStop(BusId bus_id, StopId stop_id);
 
   std::optional<Graph::Router<double>> _router;
@@ -47,10 +56,10 @@ private:
   // VertexId -> MapStop
   std::vector<MapStopPtr> _stops_by_vertices;
 
-  // StopId -> VertexId
+  // StopId -> VertexId (WAIT stops)
   std::unordered_map<StopId, VertexId> _vertices_by_wait_stops;
 
-  // StopId -> BusId -> { VertexId }
+  // StopId -> BusId -> { VertexId } (BUS stops)
   std::unordered_map<StopId, std::unordered_map<BusId, VertexIdSet>>
       _vertices_by_bus_stops;
 

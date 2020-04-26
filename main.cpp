@@ -24,26 +24,26 @@ void RunUnitTests() {
   RUN_TEST(tr, TestJsonSerialization);
 }
 
-void TestFiles(const string &input, const string &output) {
+void TestFiles(const string &name, const string &input, const string &output) {
   ifstream f_input(input);
   ifstream f_output(output);
   if (!f_input.is_open() || !f_output.is_open()) {
     throw domain_error("Failed to open test files");
   }
-  RunIntegrationTest(f_input, f_output);
+  RunIntegrationTest(name, f_input, f_output);
 }
 
-void TestPartD() { TestFiles("test-d1-input.json", "test-d1-output.json"); }
-void TestPartE1() { TestFiles("test-e1-input.json", "test-e1-output.json"); }
-void TestPartE2() { TestFiles("test-e2-input.json", "test-e2-output.json"); }
-void TestPartE3() { TestFiles("test-e3-input.json", "test-e3-output.json"); }
+void TestPartD() { TestFiles("d", "test-d1-input.json", "test-d1-output.json"); }
+void TestPartE1() { TestFiles("e1", "test-e1-input.json", "test-e1-output.json"); }
+void TestPartE2() { TestFiles("e2", "test-e2-input.json", "test-e2-output.json"); }
+void TestPartE3() { TestFiles("e3", "test-e3-input.json", "test-e3-output.json"); }
 
 void RunIntegrationTests() {
   TestRunner tr;
-  RUN_TEST(tr, TestPartD);
-  RUN_TEST(tr, TestPartE1);
+  // RUN_TEST(tr, TestPartD);
+  // RUN_TEST(tr, TestPartE1);
   RUN_TEST(tr, TestPartE2);
-  RUN_TEST(tr, TestPartE3);
+  // RUN_TEST(tr, TestPartE3);
 }
 
 int main() {

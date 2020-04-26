@@ -96,8 +96,10 @@ void Compare(const unordered_map<RequestId, Json::Node> &actual,
 
     if (!(actual_node == expected_node)) {
       cout << "Requese id " << id << endl;
-      cout << "Actual" << endl << actual_node << endl;
-      cout << "Expected" << endl << expected_node << endl;
+      cout << "Actual" << endl
+           << actual_node << endl;
+      cout << "Expected" << endl
+           << expected_node << endl;
     }
     if (route_request_ids.count(id)) {
       const auto &actual_map = actual_node.AsMap();
@@ -154,7 +156,7 @@ ReadExpectedResponsesFromJson(istream &is) {
   return res;
 }
 
-void RunIntegrationTest(istream &input, istream &output) {
+void RunIntegrationTest(string name, istream &input, istream &output) {
   JsonIo json_io;
   stringstream os;
   const auto &[settings, commands, queries] = json_io.ReadInput(input);
@@ -179,6 +181,10 @@ void RunIntegrationTest(istream &input, istream &output) {
   }
 
   const auto expected_responses = ReadExpectedResponsesFromJson(output);
-
-  Compare(correct_responses, expected_responses, route_requests_ids);
+  try {
+    Compare(correct_responses, expected_responses, route_requests_ids);
+  } catch (...) {
+    cout << db.SerializeMap() << endl;
+    throw;
+  }
 }

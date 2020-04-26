@@ -7,6 +7,7 @@
 #include "distance_storage.h"
 #include "geomath.h"
 #include "map_storage.h"
+#include "map_storage_serializer.h"
 #include "query.h"
 #include "response.h"
 #include "route.h"
@@ -34,6 +35,11 @@ public:
 
   std::optional<double> GetStopDistance(const std::string &first,
                                         const std::string &second) const;
+
+  std::string SerializeMap() const {
+    MapStorageSerializer serializer(_bus, _stop);
+    return serializer.SerializeToDot(_map);
+  }
 
 private:
   BusStorage _bus;
