@@ -1,12 +1,11 @@
 #pragma once
 
-#include "graph.h"
 #include "id.h"
 #include "map_stop.h"
-#include "router.h"
 
 #include <memory>
 #include <optional>
+#include <queue>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
@@ -20,14 +19,33 @@ struct BusAndRouteInfo {
   std::vector<std::tuple<StopId, StopId, double>> distances;
 };
 
-using VertexIdSet = std::unordered_set<Graph::VertexId>;
+using VertexIdSet = std::unordered_set<VertexId>;
 
 class MapStorage {
-  using VertexId = Graph::VertexId;
-
 public:
+  struct VertexInfo {
+    VertexId vertex_id;
+    double edge_weight;
+  };
+
+  struct VertexRecord {
+    std::vector<VertexInfo> items;
+    bool visited;
+    double total_weight;
+  };
+
+  struct EdgeInfo {
+    VertexId from;
+    VertexId to;
+    double weight;
+  };
+
+  MapStorage(size_t stops_count) : _stops_by_vertices(4 * stops_count), _incidents(4 * stops_count) {}
   void AddRouteInfo(const BusAndRouteInfo &info);
+
   void BuildRouter(double average_wait_time);
+
+  std::optional<std::vector<std::tuple<VertexId, VertexId, double>>> FindRoute(VertexId from, VertexId to);
 
   VertexId GetWaitStop(StopId stop_id) const;
   size_t TotalStopCount() const;
@@ -39,17 +57,14 @@ public:
   const std::unordered_map<StopId, VertexId> &GetVerticesByWaitStops() const {
     return _vertices_by_wait_stops;
   }
-  const Graph::Router<double> &GetRouter() const { return _router.value(); }
-  const Graph::DirectedWeightedGraph<double> &GetGraph() const {
-    return _graph.value();
-  }
+
+  const std::vector<std::vector<VertexInfo>> &GetIncidents() const { return _incidents; }
 
 private:
+  void ResetRoutes();
+
   VertexId AddOrGetWaitStop(StopId stop_id);
   VertexId AddBusStop(BusId bus_id, StopId stop_id);
-
-  std::optional<Graph::Router<double>> _router;
-  std::optional<Graph::DirectedWeightedGraph<double>> _graph;
 
   // VertexId -> MapStop
   std::vector<MapStopPtr> _stops_by_vertices;
@@ -61,5 +76,7 @@ private:
   std::unordered_map<StopId, std::unordered_map<BusId, VertexIdSet>>
       _vertices_by_bus_stops;
 
-  std::vector<std::tuple<VertexId, VertexId, double>> _temp_edges;
+  std::vector<VertexRecord> _incidents;
 };
+
+bool operator<(const MapStorage::VertexInfo &a, const MapStorage::VertexInfo &b);

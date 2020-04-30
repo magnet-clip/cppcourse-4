@@ -1,7 +1,11 @@
 #include "map_storage.h"
 
+#include <cmath>
+#include <queue>
+
 using namespace std;
-using namespace Graph;
+
+static double VERY_MUCH = 1000000000000;
 
 void MapStorage::AddRouteInfo(const BusAndRouteInfo &info) {
   // Add paths between BUS stops
@@ -20,8 +24,17 @@ void MapStorage::AddRouteInfo(const BusAndRouteInfo &info) {
     }
 
     // Calculate times between BUS/BUS stops
-    _temp_edges.push_back({prev_vertex_id, next_vertex_id,
-                           (distance / info.average_velocity) * (6.0 / 100.0)});
+    _incidents[prev_vertex_id].items.push_back({.vertex_id = next_vertex_id,
+                                                .edge_weight = (distance / info.average_velocity) * (6.0 / 100.0)});
+  }
+}
+
+void MapStorage::ResetRoutes() {
+  _stops_by_vertices.shrink_to_fit();
+  _incidents.shrink_to_fit();
+  for (auto &record : _incidents) {
+    record.total_weight = VERY_MUCH;
+    record.visited = false;
   }
 }
 
@@ -31,21 +44,56 @@ void MapStorage::BuildRouter(double average_wait_time) {
     VertexId wait_vertex_id = AddOrGetWaitStop(stop_id);
     for (const auto &[bus_id, vertex_ids] : stops_by_bus) {
       for (const auto bus_stop_vertex_id : vertex_ids) {
-        _temp_edges.push_back(
-            {wait_vertex_id, bus_stop_vertex_id, average_wait_time});
-        _temp_edges.push_back({bus_stop_vertex_id, wait_vertex_id, 0});
+        _incidents[wait_vertex_id].items.push_back({.vertex_id = bus_stop_vertex_id,
+                                                    .edge_weight = average_wait_time});
+        _incidents[bus_stop_vertex_id].items.push_back({.vertex_id = wait_vertex_id,
+                                                        .edge_weight = 0.0});
       }
     }
   }
+}
 
-  // Actually build the router
-  _graph.emplace(TotalStopCount());
-  for (const auto &[first, second, time] : _temp_edges) {
-    Edge<double> edge{first, second, time};
-    _graph->AddEdge(edge);
-  }
-  _temp_edges.clear();
-  _router.emplace(_graph.value());
+optional<vector<tuple<VertexId, VertexId, double>>> MapStorage::FindRoute(VertexId from, VertexId to) {
+  ResetRoutes();
+
+  double min_distance = 0.0;
+
+  VertexId current_vertex_id = from;
+  vector<VertexInfo *> current_vertex_queue;
+  vector<VertexInfo *> next_vertex_queue;
+
+  do {
+    for (auto &vertex_info : _incidents[current_vertex_id].items) {
+      current_vertex_queue.push_back(&vertex_info);
+    }
+    // TODO sort current_vertex_queue by total_weight and edge_weight
+
+    for (const auto &item : current_vertex_queue) {
+      auto &another_vertex = _incidents[item->vertex_id];
+      if (_incidents[item->vertex_id].visited) {
+        continue;
+      }
+
+      const auto new_weight = min_distance + item->edge_weight;
+      if (new_weight < another_vertex.total_weight) {
+        another_vertex.total_weight = new_weight;
+      }
+      next_vertex_queue.push_back(item);
+    }
+    _incidents[current_vertex_id].visited = true;
+    // TODO sort next_vertex_queue by total_weight and edge_weight
+
+    // TODO у меня сейчас есть список next_vertex_queue - все вершины, соседние с данной и еще не просмотренные
+    // у каждой из них есть свой список смежности. Если я пойду вглубь по этому списку смежности, то next_vertex_queue
+    // будет разрастаться. Не совсем понятно как надо
+
+    // TODO wiki: из ещё не посещённых вершин выбирается вершина u, имеющая минимальную метку. не посещенные с минимальной
+    //  меткой это те, которых мы хоть как-то потрогали
+    //
+
+  } while (true);
+
+  return nullopt;
 }
 
 VertexId MapStorage::AddOrGetWaitStop(StopId stop_id) {

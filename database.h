@@ -38,7 +38,7 @@ public:
 
   std::string SerializeMap() const {
     MapStorageSerializer serializer(_bus, _stop);
-    return serializer.SerializeToDot(_map);
+    return serializer.SerializeToDot(_map.value());
   }
 
 private:
@@ -47,7 +47,7 @@ private:
   StopStorage _stop;
   DistanceStorage _distance;
 
-  MapStorage _map;
+  std::optional<MapStorage> _map;
   RoutingSettings _settings;
 
   HelicopterDistanceCalculator _helicopter_dist{Planet::Earth, _stop};

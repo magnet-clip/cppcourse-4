@@ -19,6 +19,7 @@ public:
   StopPtr Get(StopId id) const { return _stops[id]; }
   std::optional<StopId> TryFindIdByName(const std::string &stop_name) const;
   StopPtr TryFindByName(const std::string &stop_name) const;
+  size_t GetStopsCount() const { return _stops.size(); }
 
 private:
   std::unordered_map<std::string, StopId> _stop_ids;

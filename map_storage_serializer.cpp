@@ -48,10 +48,11 @@ std::string MapStorageSerializer::SerializeToDot(const MapStorage &storage) cons
     }
   }
   ss << "/* ROUTES */" << endl;
-  const auto &graph = storage.GetGraph();
-  for (size_t edge_id = 0; edge_id < graph.GetEdgeCount(); edge_id++) {
-    const auto edge = graph.GetEdge(edge_id);
-    ss << edge.from << " -> " << edge.to << " [len=" << edge.weight << "];" << endl;
+  const auto &incidents = storage.GetIncidents();
+  for (VertexId from = 0; from < incidents.size(); from++) {
+    for (const auto &info : incidents[from]) {
+      ss << from << " -> " << info.vertex_id << " [len=" << info.edge_weight << "];" << endl;
+    }
   }
   ss << "}" << endl;
   return ss.str();
@@ -113,13 +114,16 @@ string MapStorageSerializer::SerializeToString(const MapStorage &storage) const 
      << setw(15) << "From Vertex ID"
      << setw(15) << "To Vertex Id"
      << setw(10) << "Weight" << endl;
-  const auto &graph = storage.GetGraph();
-  for (size_t edge_id = 0; edge_id < graph.GetEdgeCount(); edge_id++) {
-    const auto edge = graph.GetEdge(edge_id);
-    ss << setw(10) << edge_id
-       << setw(15) << edge.from
-       << setw(15) << edge.to
-       << setw(10) << edge.weight << endl;
+
+  size_t idx = 0;
+  const auto &incidents = storage.GetIncidents();
+  for (VertexId from = 0; from < incidents.size(); from++) {
+    for (const auto &info : incidents[from]) {
+      ss << setw(10) << idx++
+         << setw(15) << from
+         << setw(15) << info.vertex_id
+         << setw(10) << info.edge_weight << endl;
+    }
   }
   return ss.str();
 }

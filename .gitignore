@@ -3,6 +3,7 @@ build
 .devcontainer
 .idea
 cmake-build-debug
+other
 *.zip
 *.out
 *.png

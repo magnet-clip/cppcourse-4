@@ -41,8 +41,7 @@ void TestPartF() { TestFiles("all", "transport-input4.json", "transport-output4.
 
 void RunIntegrationTests() {
   TestRunner tr;
-  RUN_TEST(tr, TestPartF);
-  RUN_TEST(tr, TestPartF);
+  // RUN_TEST(tr, TestPartF);
   RUN_TEST(tr, TestPartD);
   RUN_TEST(tr, TestPartE1);
   RUN_TEST(tr, TestPartE2);
@@ -51,8 +50,8 @@ void RunIntegrationTests() {
 
 int main() {
   // RunUnitTests();
-  // RunIntegrationTests();
-  JsonIo io;
-  InAndOut(cin, cout, io);
+  RunIntegrationTests();
+  // JsonIo io;
+  // InAndOut(cin, cout, io);
   return 0;
 }
