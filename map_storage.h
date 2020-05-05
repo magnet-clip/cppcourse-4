@@ -5,7 +5,6 @@
 
 #include <memory>
 #include <optional>
-#include <queue>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
@@ -23,15 +22,9 @@ using VertexIdSet = std::unordered_set<VertexId>;
 
 class MapStorage {
 public:
-  struct VertexInfo {
+  struct Neighbour {
     VertexId vertex_id;
-    double edge_weight;
-  };
-
-  struct VertexRecord {
-    std::vector<VertexInfo> items;
-    bool visited;
-    double total_weight;
+    double distance;
   };
 
   struct EdgeInfo {
@@ -40,7 +33,9 @@ public:
     double weight;
   };
 
-  MapStorage(size_t stops_count) : _stops_by_vertices(4 * stops_count), _incidents(4 * stops_count) {}
+  MapStorage(size_t stops_count) {
+    _incidents.assign(4 * stops_count, {});
+  }
   void AddRouteInfo(const BusAndRouteInfo &info);
 
   void BuildRouter(double average_wait_time);
@@ -58,13 +53,12 @@ public:
     return _vertices_by_wait_stops;
   }
 
-  const std::vector<std::vector<VertexInfo>> &GetIncidents() const { return _incidents; }
+  const std::vector<std::vector<Neighbour>> &GetIncidents() const { return _incidents; }
 
 private:
-  void ResetRoutes();
-
   VertexId AddOrGetWaitStop(StopId stop_id);
   VertexId AddBusStop(BusId bus_id, StopId stop_id);
+  void AddIncident(VertexId where, VertexId to, double distance);
 
   // VertexId -> MapStop
   std::vector<MapStopPtr> _stops_by_vertices;
@@ -76,7 +70,5 @@ private:
   std::unordered_map<StopId, std::unordered_map<BusId, VertexIdSet>>
       _vertices_by_bus_stops;
 
-  std::vector<VertexRecord> _incidents;
+  std::vector<std::vector<Neighbour>> _incidents;
 };
-
-bool operator<(const MapStorage::VertexInfo &a, const MapStorage::VertexInfo &b);

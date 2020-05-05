@@ -51,7 +51,7 @@ std::string MapStorageSerializer::SerializeToDot(const MapStorage &storage) cons
   const auto &incidents = storage.GetIncidents();
   for (VertexId from = 0; from < incidents.size(); from++) {
     for (const auto &info : incidents[from]) {
-      ss << from << " -> " << info.vertex_id << " [len=" << info.edge_weight << "];" << endl;
+      ss << from << " -> " << info.vertex_id << " [len=" << info.distance << "];" << endl;
     }
   }
   ss << "}" << endl;
@@ -122,7 +122,7 @@ string MapStorageSerializer::SerializeToString(const MapStorage &storage) const 
       ss << setw(10) << idx++
          << setw(15) << from
          << setw(15) << info.vertex_id
-         << setw(10) << info.edge_weight << endl;
+         << setw(10) << info.distance << endl;
     }
   }
   return ss.str();

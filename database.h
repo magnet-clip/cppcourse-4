@@ -38,7 +38,7 @@ public:
 
   std::string SerializeMap() const {
     MapStorageSerializer serializer(_bus, _stop);
-    return serializer.SerializeToDot(_map.value());
+    return serializer.SerializeToDot(*_map);
   }
 
 private:
