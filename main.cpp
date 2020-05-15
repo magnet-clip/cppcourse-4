@@ -1,3 +1,5 @@
+#include <fstream>
+
 #include "database.test.h"
 #include "geomath.test.h"
 #include "io.h"
@@ -6,8 +8,6 @@
 #include "parser.test.h"
 #include "priority_queue.test.h"
 #include "test_runner.h"
-
-#include <fstream>
 
 using namespace std;
 
@@ -29,6 +29,8 @@ void RunUnitTests() {
   RUN_TEST(tr, TestGetItemsQueue);
   RUN_TEST(tr, TestInsertQueue);
   RUN_TEST(tr, TestUpdatePriorityQueue);
+  RUN_TEST(tr, TestRemoveAllElements);
+  RUN_TEST(tr, TestSameWeight);
 }
 
 void TestFiles(const string &name, const string &input, const string &output) {

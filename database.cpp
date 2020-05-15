@@ -84,7 +84,6 @@ ResponsePtr Database::ExecuteStopQuery(const StopQuery &query) {
 }
 
 void Database::BuildMap() {
-  _map.emplace(_stop.GetStopsCount());
   for (const auto &bus_id : _bus.GetBuses()) {
     BusAndRouteInfo info;
     const auto &route = _route.Get(bus_id);
@@ -97,9 +96,9 @@ void Database::BuildMap() {
       info.distances.push_back(
           {first, second, _given_dist.GetDistance(first, second)});
     });
-    _map->AddRouteInfo(info);
+    _map.AddRouteInfo(info);
   }
-  _map->BuildRouter(_settings.bus_wait_time);
+  _map.BuildRouter(_settings.bus_wait_time);
 }
 
 ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
@@ -112,12 +111,12 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
   // const auto &router = _map.GetRouter();
 
   // 1) Find VertexIds of WAIT_STOPs for from and to
-  auto from_wait_stop_vertex_id = _map->GetWaitStop(from->GetId());
-  auto to_wait_stop_vertex_id = _map->GetWaitStop(to->GetId());
+  auto from_wait_stop_vertex_id = _map.GetWaitStop(from->GetId());
+  auto to_wait_stop_vertex_id = _map.GetWaitStop(to->GetId());
 
   // 2) Build route from WAIT_STOP to WAIT_STOP
   const auto &route =
-      _map->FindRoute(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
+      _map.FindRoute(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
 
   if (!route) {
     return make_shared<NoRouteResponse>(query.GetId());
@@ -130,8 +129,8 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
 
   for (size_t idx = 0; idx < route->size(); idx++) {
     const auto [prev_vertex_id, curr_vertex_id, time] = route->at(idx);
-    const auto prev_stop = _map->GetStopByVertex(prev_vertex_id);
-    const auto curr_stop = _map->GetStopByVertex(curr_vertex_id);
+    const auto prev_stop = _map.GetStopByVertex(prev_vertex_id);
+    const auto curr_stop = _map.GetStopByVertex(curr_vertex_id);
 
     if (prev_stop->IsWait() && curr_stop->IsWait()) {
       // Wait Stop -> Wait Stop

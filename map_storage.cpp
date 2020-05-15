@@ -1,4 +1,7 @@
 #include "map_storage.h"
+
+#include <iostream>
+
 #include "priority_queue.h"
 
 using namespace std;
@@ -41,24 +44,48 @@ void MapStorage::BuildRouter(double average_wait_time) {
       }
     }
   }
-  _incidents.shrink_to_fit();
+}
+
+void PrintIncidents(const unordered_map<VertexId, vector<MapStorage::Neighbour>> &incidents) {
+  for (const auto &[id, items] : incidents) {
+    cout << "Item " << id << " has " << items.size() << " incidents" << endl;
+    for (const auto &n : items) {
+      cout << "  n " << n.vertex_id << ", distance " << n.distance << endl;
+    }
+  }
 }
 
 optional<vector<tuple<VertexId, VertexId, double>>> MapStorage::FindRoute(VertexId from, VertexId to) {
+  cout << "Routing from " << from << " to " << to << endl;
+
   VertexId u_id = from;
   vector<VertexId> prev(_incidents.size(), to);
-  PriorityQueue<VertexId> queue(_incidents.size());
+  PriorityQueue queue(_incidents.size());
 
-  for (VertexId id = 0; id < _incidents.size(); id++) {
-    queue.Insert(id, from ? 0.0 : VERY_MUCH);
+  cout << "There's " << _incidents.size() << " items in incidents list" << endl;
+  PrintIncidents(_incidents);
+
+  for (const auto &[id, _] : _incidents) {
+    double w = id == from ? 0.0 : VERY_MUCH;
+    queue.Insert(id, w);
+    cout << "Inserting " << id << " with weight " << w << endl;
   }
 
-  while (u_id != to && queue.Size() > 0) {
+  while (queue.Size() > 0) {
     auto u = queue.PopMin();
-    auto u_distance = u.weight;
+
     u_id = u.item;
+    auto u_distance = u.weight;
+    if (u_id == to) {
+      break;
+    }
+    cout << "Min vertex id is  " << u_id << ", distance is " << u_distance << ", has " << _incidents[u_id].size() << " incidents" << endl;
     for (auto &neighbor : _incidents[u_id]) {
       auto alt = u_distance + neighbor.distance;
+
+      cout << "--> Neighbor id is  " << neighbor.vertex_id << ", distance is " << neighbor.distance << endl;
+      cout << "--> alt weight " << alt << ", current weight is " << queue.GetItem(neighbor.vertex_id).weight << endl;
+
       if (alt < queue.GetItem(neighbor.vertex_id).weight) {
         prev[neighbor.vertex_id] = u_id;
         queue.UpdatePriority(neighbor.vertex_id, alt);

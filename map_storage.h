@@ -1,14 +1,14 @@
 #pragma once
 
-#include "id.h"
-#include "map_stop.h"
-
 #include <memory>
 #include <optional>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "id.h"
+#include "map_stop.h"
 
 struct BusAndRouteInfo {
   BusId bus_id;
@@ -21,7 +21,7 @@ struct BusAndRouteInfo {
 using VertexIdSet = std::unordered_set<VertexId>;
 
 class MapStorage {
-public:
+ public:
   struct Neighbour {
     VertexId vertex_id;
     double distance;
@@ -33,9 +33,6 @@ public:
     double weight;
   };
 
-  MapStorage(size_t stops_count) {
-    _incidents.assign(4 * stops_count, {});
-  }
   void AddRouteInfo(const BusAndRouteInfo &info);
 
   void BuildRouter(double average_wait_time);
@@ -53,9 +50,9 @@ public:
     return _vertices_by_wait_stops;
   }
 
-  const std::vector<std::vector<Neighbour>> &GetIncidents() const { return _incidents; }
+  const std::unordered_map<VertexId, std::vector<Neighbour>> &GetIncidents() const { return _incidents; }
 
-private:
+ private:
   VertexId AddOrGetWaitStop(StopId stop_id);
   VertexId AddBusStop(BusId bus_id, StopId stop_id);
   void AddIncident(VertexId where, VertexId to, double distance);
@@ -70,5 +67,5 @@ private:
   std::unordered_map<StopId, std::unordered_map<BusId, VertexIdSet>>
       _vertices_by_bus_stops;
 
-  std::vector<std::vector<Neighbour>> _incidents;
+  std::unordered_map<VertexId, std::vector<Neighbour>> _incidents;
 };
