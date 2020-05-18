@@ -60,7 +60,7 @@ optional<vector<tuple<VertexId, VertexId, double>>> MapStorage::FindRoute(Vertex
 
   VertexId u_id = from;
   vector<VertexId> prev(_incidents.size(), to);
-  PriorityQueue queue(_incidents.size());
+  PriorityQueue<std::greater<double>> queue(_incidents.size());
 
   cout << "There's " << _incidents.size() << " items in incidents list" << endl;
   PrintIncidents(_incidents);
@@ -72,7 +72,7 @@ optional<vector<tuple<VertexId, VertexId, double>>> MapStorage::FindRoute(Vertex
   }
 
   while (queue.Size() > 0) {
-    auto u = queue.PopMin();
+    auto u = queue.PopMax();
 
     u_id = u.item;
     auto u_distance = u.weight;

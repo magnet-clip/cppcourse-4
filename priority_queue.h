@@ -10,21 +10,23 @@ struct QueueItem {
   double weight;
 };
 
+template <typename Comp = std::less<double>>
 class PriorityQueue {
  public:
   PriorityQueue(size_t max_size) : _heap(max_size + 1),
                                    _size(0),
-                                   _max_size(max_size + 1) {
+                                   _max_size(max_size + 1),
+                                   _comp(Comp()) {
   }
 
   void Insert(unsigned long data, double weight) {
     if (_size == _max_size) {
       throw std::domain_error("Too many elements");
     }
-    _size += 1;
     _heap[_size] = {data, weight};
     _pos[data] = _size;
     SiftUp(_size);
+    _size += 1;
   }
 
   QueueItem PopMax() {
@@ -34,16 +36,8 @@ class PriorityQueue {
     return result;
   }
 
-  QueueItem PopMin() {
-    return _heap[_size--];
-  }
-
   const QueueItem &PeekMax() const {
     return _heap.at(0);
-  }
-
-  const QueueItem &PeekMin() const {
-    return _heap.at(_size);
   }
 
   const QueueItem &GetItem(unsigned long item) const {
@@ -69,7 +63,7 @@ class PriorityQueue {
   }
 
   void SiftUp(size_t i) {
-    while (i > 0 && _heap[Parent(i)].weight < _heap[i].weight) {
+    while (i > 0 && _comp(_heap[Parent(i)].weight, _heap[i].weight)) {
       auto p = Parent(i);
       Swap(i, p);
       i = p;
@@ -79,11 +73,11 @@ class PriorityQueue {
   void SiftDown(size_t i) {
     auto max_index = i;
     auto l = LeftChild(i);
-    if (l < _size && _heap[l].weight > _heap[max_index].weight) {
+    if (l < _size && !_comp(_heap[l].weight, _heap[max_index].weight)) {
       max_index = l;
     }
     auto r = RightChild(i);
-    if (r < _size && _heap[r].weight > _heap[max_index].weight) {
+    if (r < _size && !_comp(_heap[r].weight, _heap[max_index].weight)) {
       max_index = r;
     }
     if (i != max_index) {
@@ -96,4 +90,5 @@ class PriorityQueue {
   std::unordered_map<unsigned long, size_t> _pos;  // VertexId -> Position
   size_t _size;
   size_t _max_size;
+  Comp _comp;
 };
