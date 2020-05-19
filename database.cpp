@@ -119,7 +119,7 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
 
   // 2) Build route from WAIT_STOP to WAIT_STOP
   const auto &route =
-      router.BuildRoute2(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
+      router.BuildRoute(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
 
   if (!route) {
     return make_shared<NoRouteResponse>(query.GetId());
@@ -127,16 +127,16 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
 
   // 3) Trace route by edges and make a response
   FoundRouteResponse response(query.GetId());
-  response.total_time = route->total_distance;
-
-  for (size_t idx = 1; idx < route->path.size(); idx++) {
-    const auto prev_vertex_id = route->path[idx - 1];
-    const auto curr_vertex_id = route->path[idx];
+  response.total_time = 0;
+  if (route->size() < 1) {
+    throw domain_error("Path too short");
+  }
+  for (size_t idx = 1; idx < route->size(); idx++) {
+    const auto prev_vertex_id = route->at(idx - 1);
+    const auto curr_vertex_id = route->at(idx);
     const auto time = _map.GetGraph().GetDistance(prev_vertex_id, curr_vertex_id);
+    response.total_time += time;
 
-    // EdgeId edge_id = router.GetRouteEdge(route->id, idx);
-    // const auto [prev_vertex_id, curr_vertex_id, time] =
-    //     _map.GetGraph().GetEdge(edge_id);
     const auto prev_stop = _map.GetStopByVertex(prev_vertex_id);
     const auto curr_stop = _map.GetStopByVertex(curr_vertex_id);
 
