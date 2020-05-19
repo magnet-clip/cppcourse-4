@@ -1,5 +1,6 @@
 #include <router.h>
 
+#include <iostream>
 #include <limits>
 #include <queue>
 #include <utility>
@@ -58,6 +59,7 @@ optional<double> Router::FindDistance(VertexId from, VertexId to) const {
 }
 
 optional<Router::RouteInfo2> Router::BuildRoute2(VertexId from, VertexId to) const {
+  cout << "Looking for distance between " << from << " and " << to << endl;
   if (from == to) {
     RouteInfo2 res;
     res.path = {from};
