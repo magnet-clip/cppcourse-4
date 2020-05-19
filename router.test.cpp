@@ -88,69 +88,69 @@ void TestRouterRoute() {
 
   const Router r(g);
   {
-    auto route = r.BuildRoute2(0, 0);
-    ASSERT_EQUAL(route->total_distance, 0);
-    ASSERT_EQUAL(route->path.size(), 1UL);
-    ASSERT_EQUAL(route->path[0], 0UL);
+    auto route = r.BuildRoute(0, 0);
+    // ASSERT_EQUAL(route->total_distance, 0);
+    ASSERT_EQUAL(route->size(), 1UL);
+    ASSERT_EQUAL(route->at(0), 0UL);
   }
   {
-    auto route = r.BuildRoute2(0, 1);
-    ASSERT_EQUAL(route->total_distance, 4);
-    ASSERT_EQUAL(route->path.size(), 2UL);
+    auto route = r.BuildRoute(0, 1);
+    // ASSERT_EQUAL(route->total_distance, 4);
+    ASSERT_EQUAL(route->size(), 2UL);
     vector<VertexId> expected_path{0, 1};
-    ASSERT_EQUAL(route->path, expected_path);
+    ASSERT_EQUAL(*route, expected_path);
   }
   {
-    auto route = r.BuildRoute2(0, 2);
-    ASSERT_EQUAL(route->total_distance, 12);
-    ASSERT_EQUAL(route->path.size(), 3UL);
+    auto route = r.BuildRoute(0, 2);
+    // ASSERT_EQUAL(route->total_distance, 12);
+    ASSERT_EQUAL(route->size(), 3UL);
     vector<VertexId> expected_path{0, 1, 2};
-    ASSERT_EQUAL(route->path, expected_path);
+    ASSERT_EQUAL(*route, expected_path);
   }
   {
-    auto route = r.BuildRoute2(0, 3);
-    ASSERT_EQUAL(route->total_distance, 19);
-    ASSERT_EQUAL(route->path.size(), 4UL);
+    auto route = r.BuildRoute(0, 3);
+    // ASSERT_EQUAL(route->total_distance, 19);
+    ASSERT_EQUAL(route->size(), 4UL);
     vector<VertexId> expected_path{0, 1, 2, 3};
-    ASSERT_EQUAL(route->path, expected_path);
+    ASSERT_EQUAL(*route, expected_path);
   }
   {
-    auto route = r.BuildRoute2(0, 4);
-    ASSERT_EQUAL(route->total_distance, 28);
-    ASSERT_EQUAL(route->path.size(), 5UL);
+    auto route = r.BuildRoute(0, 4);
+    // ASSERT_EQUAL(route->total_distance, 28);
+    ASSERT_EQUAL(route->size(), 5UL);
     vector<VertexId> expected_path{0, 1, 2, 3, 4};
-    ASSERT_EQUAL(route->path, expected_path);
+    ASSERT_EQUAL(*route, expected_path);
   }
   {
-    auto route = r.BuildRoute2(0, 5);
-    ASSERT_EQUAL(route->total_distance, 16);
-    ASSERT_EQUAL(route->path.size(), 4UL);
+    auto route = r.BuildRoute(0, 5);
+    // ASSERT_EQUAL(route->total_distance, 16);
+    ASSERT_EQUAL(route->size(), 4UL);
     vector<VertexId> expected_path{0, 1, 2, 5};
-    ASSERT_EQUAL(route->path, expected_path);
+    ASSERT_EQUAL(*route, expected_path);
   }
   {
-    auto route = r.BuildRoute2(0, 6);
-    ASSERT_EQUAL(route->total_distance, 18);
-    ASSERT_EQUAL(route->path.size(), 5UL);
+    auto route = r.BuildRoute(0, 6);
+    // ASSERT_EQUAL(route->total_distance, 18);
+    ASSERT_EQUAL(route->size(), 5UL);
     vector<VertexId> expected_path{0, 1, 2, 5, 6};
-    ASSERT_EQUAL(route->path, expected_path);
+    ASSERT_EQUAL(*route, expected_path);
   }
   {
-    auto route = r.BuildRoute2(0, 7);
-    ASSERT_EQUAL(route->total_distance, 8);
-    ASSERT_EQUAL(route->path.size(), 2UL);
+    auto route = r.BuildRoute(0, 7);
+    // ASSERT_EQUAL(route->total_distance, 8);
+    ASSERT_EQUAL(route->size(), 2UL);
     vector<VertexId> expected_path{0, 7};
-    ASSERT_EQUAL(route->path, expected_path);
+    ASSERT_EQUAL(*route, expected_path);
   }
   {
-    auto route = r.BuildRoute2(0, 8);
-    ASSERT_EQUAL(route->total_distance, 14);
-    ASSERT_EQUAL(route->path.size(), 4UL);
+    auto route = r.BuildRoute(0, 8);
+    // ASSERT_EQUAL(route->total_distance, 14);
+    ASSERT_EQUAL(route->size(), 4UL);
     vector<VertexId> expected_path{0, 1, 2, 8};
-    ASSERT_EQUAL(route->path, expected_path);
+    ASSERT_EQUAL(*route, expected_path);
   }
   {
-    auto d = r.BuildRoute2(7, 0);
+    auto d = r.BuildRoute(7, 0);
     ASSERT(d == nullopt);
   }
 }
