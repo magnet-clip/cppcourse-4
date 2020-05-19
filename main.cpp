@@ -1,12 +1,13 @@
+#include <fstream>
+
 #include "database.test.h"
 #include "geomath.test.h"
 #include "io.h"
 #include "io.test.h"
 #include "json.test.h"
 #include "parser.test.h"
+#include "router.test.h"
 #include "test_runner.h"
-
-#include <fstream>
 
 using namespace std;
 
@@ -22,6 +23,8 @@ void RunUnitTests() {
   RUN_TEST(tr, TestJsonBusParsing);
   RUN_TEST(tr, TestJsonSample);
   RUN_TEST(tr, TestJsonSerialization);
+  RUN_TEST(tr, TestRouterSimple);
+  RUN_TEST(tr, TestRouterRoute);
 }
 
 void TestFiles(const string &name, const string &input, const string &output) {
@@ -41,18 +44,17 @@ void TestPartF() { TestFiles("all", "transport-input4.json", "transport-output4.
 
 void RunIntegrationTests() {
   TestRunner tr;
-  RUN_TEST(tr, TestPartF);
-  RUN_TEST(tr, TestPartF);
   RUN_TEST(tr, TestPartD);
   RUN_TEST(tr, TestPartE1);
   RUN_TEST(tr, TestPartE2);
   RUN_TEST(tr, TestPartE3);
+  RUN_TEST(tr, TestPartF);
 }
 
 int main() {
-  // RunUnitTests();
-  // RunIntegrationTests();
-  JsonIo io;
-  InAndOut(cin, cout, io);
+  RunUnitTests();
+  RunIntegrationTests();
+  // JsonIo io;
+  // InAndOut(cin, cout, io);
   return 0;
 }

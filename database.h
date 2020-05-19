@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <vector>
+
 #include "bus_storage.h"
 #include "command.h"
 #include "distance.h"
@@ -16,11 +19,8 @@
 #include "stop.h"
 #include "stop_storage.h"
 
-#include <memory>
-#include <vector>
-
 class Database {
-public:
+ public:
   void UseSettings(RoutingSettings settings) { _settings = settings; }
   void ExecuteCommands(const std::vector<CommandPtr> &commands);
   void ExecuteBusCommand(const BusCommand &command);
@@ -41,7 +41,7 @@ public:
     return serializer.SerializeToDot(_map);
   }
 
-private:
+ private:
   BusStorage _bus;
   RouteStorage _route;
   StopStorage _stop;

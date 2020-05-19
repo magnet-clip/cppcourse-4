@@ -1,16 +1,16 @@
 #pragma once
 
-#include "graph.h"
-#include "id.h"
-#include "map_stop.h"
-#include "router.h"
-
 #include <memory>
 #include <optional>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "graph.h"
+#include "id.h"
+#include "map_stop.h"
+#include "router.h"
 
 struct BusAndRouteInfo {
   BusId bus_id;
@@ -25,7 +25,7 @@ using VertexIdSet = std::unordered_set<Graph::VertexId>;
 class MapStorage {
   using VertexId = Graph::VertexId;
 
-public:
+ public:
   void AddRouteInfo(const BusAndRouteInfo &info);
   void BuildRouter(double average_wait_time);
 
@@ -39,17 +39,17 @@ public:
   const std::unordered_map<StopId, VertexId> &GetVerticesByWaitStops() const {
     return _vertices_by_wait_stops;
   }
-  const Graph::Router<double> &GetRouter() const { return _router.value(); }
-  const Graph::DirectedWeightedGraph<double> &GetGraph() const {
+  const Graph::Router &GetRouter() const { return _router.value(); }
+  const Graph::DirectedWeightedGraph &GetGraph() const {
     return _graph.value();
   }
 
-private:
+ private:
   VertexId AddOrGetWaitStop(StopId stop_id);
   VertexId AddBusStop(BusId bus_id, StopId stop_id);
 
-  std::optional<Graph::Router<double>> _router;
-  std::optional<Graph::DirectedWeightedGraph<double>> _graph;
+  std::optional<Graph::Router> _router;
+  std::optional<Graph::DirectedWeightedGraph> _graph;
 
   // VertexId -> MapStop
   std::vector<MapStopPtr> _stops_by_vertices;

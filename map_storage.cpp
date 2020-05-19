@@ -41,8 +41,7 @@ void MapStorage::BuildRouter(double average_wait_time) {
   // Actually build the router
   _graph.emplace(TotalStopCount());
   for (const auto &[first, second, time] : _temp_edges) {
-    Edge<double> edge{first, second, time};
-    _graph->AddEdge(edge);
+    _graph->AddEdge({first, second, time});
   }
   _temp_edges.clear();
   _router.emplace(_graph.value());
