@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "pair_hasher.h"
+
 template <typename It>
 class Range {
  public:
@@ -28,16 +30,6 @@ struct Edge {
   VertexId from;
   VertexId to;
   double weight;
-};
-
-struct PairHasher {
-  std::hash<VertexId> vtx_hash;
-  size_t operator()(const std::pair<VertexId, VertexId> &p) const {
-    size_t res = 17;
-    res = 31 * res + vtx_hash(p.first);
-    res = 31 * res + vtx_hash(p.second);
-    return res;
-  }
 };
 
 class DirectedWeightedGraph {

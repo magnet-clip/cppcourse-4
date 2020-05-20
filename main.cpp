@@ -25,6 +25,7 @@ void RunUnitTests() {
   RUN_TEST(tr, TestJsonSerialization);
   RUN_TEST(tr, TestRouterSimple);
   RUN_TEST(tr, TestRouterRoute);
+  RUN_TEST(tr, TestRouterRoute2);
 }
 
 void TestFiles(const string &name, const string &input, const string &output) {
@@ -44,15 +45,15 @@ void TestPartF() { TestFiles("all", "transport-input4.json", "transport-output4.
 
 void RunIntegrationTests() {
   TestRunner tr;
-  // RUN_TEST(tr, TestPartD);
-  // RUN_TEST(tr, TestPartE1);
+  RUN_TEST(tr, TestPartD);
+  RUN_TEST(tr, TestPartE1);
   RUN_TEST(tr, TestPartE2);
-  // RUN_TEST(tr, TestPartE3);
-  // RUN_TEST(tr, TestPartF);
+  RUN_TEST(tr, TestPartE3);
+  RUN_TEST(tr, TestPartF);
 }
 
 int main() {
-  // RunUnitTests();
+  RunUnitTests();
   RunIntegrationTests();
   // JsonIo io;
   // InAndOut(cin, cout, io);

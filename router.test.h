@@ -2,3 +2,4 @@
 
 void TestRouterSimple();
 void TestRouterRoute();
+void TestRouterRoute2();

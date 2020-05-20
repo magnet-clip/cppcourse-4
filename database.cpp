@@ -127,15 +127,15 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
 
   // 3) Trace route by edges and make a response
   FoundRouteResponse response(query.GetId());
-  response.total_time = 0;
-  if (route->size() < 1) {
+  response.total_time = route->total_distance;
+  if (route->path.size() < 1) {
     throw domain_error("Path too short");
   }
-  for (size_t idx = 1; idx < route->size(); idx++) {
-    const auto prev_vertex_id = route->at(idx - 1);
-    const auto curr_vertex_id = route->at(idx);
+  for (size_t idx = 1; idx < route->path.size(); idx++) {
+    const auto prev_vertex_id = route->path.at(idx - 1);
+    const auto curr_vertex_id = route->path.at(idx);
     const auto time = _map.GetGraph().GetDistance(prev_vertex_id, curr_vertex_id);
-    response.total_time += time;
+    // response.total_time += time;
 
     const auto prev_stop = _map.GetStopByVertex(prev_vertex_id);
     const auto curr_stop = _map.GetStopByVertex(curr_vertex_id);
