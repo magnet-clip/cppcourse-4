@@ -177,10 +177,16 @@ void TestRouterRoute2() {
   route = r.BuildRoute(6, 0);
   ASSERT(route == nullopt);
 
+  route = r.BuildRoute(0, 6);
+  ASSERT_EQUAL(route->total_distance, 18);
+  ASSERT_EQUAL(route->path.size(), 5UL);
+  vector<VertexId> expected_path = {0, 1, 2, 5, 6};
+  ASSERT_EQUAL(route->path, expected_path);
+
   route = r.BuildRoute(0, 1);
   ASSERT_EQUAL(route->total_distance, 4);
   ASSERT_EQUAL(route->path.size(), 2UL);
-  vector<VertexId> expected_path{0, 1};
+  expected_path = {0, 1};
   ASSERT_EQUAL(route->path, expected_path);
 
   route = r.BuildRoute(0, 2);

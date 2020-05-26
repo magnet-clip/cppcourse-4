@@ -68,7 +68,6 @@ optional<Router::Route> Router::BuildRoute(VertexId from, VertexId to) const {
 
     return {{_routes[from][to].distance, {path.rbegin(), path.rend()}}};
   }
-  cout << " - have not tried, will look for a route" << endl;
 
   // state is Unknown
   priority_queue<HalfEdge, vector<HalfEdge>, HalfEdgeComparer> edge_queue;
