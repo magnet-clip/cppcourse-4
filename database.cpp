@@ -116,8 +116,13 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
   // 1) Find VertexIds of WAIT_STOPs for from and to
   auto from_wait_stop_vertex_id = _map.GetWaitStop(from->GetId());
   auto to_wait_stop_vertex_id = _map.GetWaitStop(to->GetId());
+  // if (from_wait_stop_vertex_id == nullopt || to_wait_stop_vertex_id == nullopt) {
+  //   return make_shared<NoRouteResponse>(query.GetId());
+  // }
 
   // 2) Build route from WAIT_STOP to WAIT_STOP
+  // const auto &route =
+  //     router.BuildRoute(*from_wait_stop_vertex_id, *to_wait_stop_vertex_id);
   const auto &route =
       router.BuildRoute(from_wait_stop_vertex_id, to_wait_stop_vertex_id);
 
@@ -127,6 +132,7 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
 
   // 3) Trace route by edges and make a response
   FoundRouteResponse response(query.GetId());
+  // cout << query.GetId() << endl;
   response.total_time = route->total_distance;
   // if (route->path.size() < 1) {
   //   throw domain_error("Path too short");

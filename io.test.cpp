@@ -96,13 +96,6 @@ void Compare(const unordered_map<RequestId, Json::Node> &actual,
     ASSERT_EQUAL(expected.count(id), 1UL);
     const auto &expected_node = expected.at(id);
 
-    if (!(actual_node == expected_node)) {
-      cout << "Request id " << id << endl;
-      cout << "Actual" << endl
-           << actual_node << endl;
-      cout << "Expected" << endl
-           << expected_node << endl;
-    }
     if (route_request_ids.count(id)) {
       const auto &actual_map = actual_node.AsMap();
       const auto &expected_map = expected_node.AsMap();

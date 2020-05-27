@@ -30,6 +30,7 @@ class MapStorage {
   void BuildRouter(double average_wait_time);
 
   VertexId GetWaitStop(StopId stop_id) const;
+  // std::optional<VertexId> GetWaitStop(StopId stop_id) const;
   size_t TotalStopCount() const;
   std::shared_ptr<MapStop> GetStopByVertex(VertexId vertex_id) const;
 

@@ -38,6 +38,7 @@ void TestFiles(const string &name, const string &input, const string &output) {
   RunIntegrationTest(name, f_input, f_output);
 }
 
+void TestPartX() { TestFiles("x", "test-x-input.json", "test-x-output.json"); }
 void TestPartD() { TestFiles("d", "test-d1-input.json", "test-d1-output.json"); }
 void TestPartE1() { TestFiles("e1", "test-e1-input.json", "test-e1-output.json"); }
 void TestPartE2() { TestFiles("e2", "test-e2-input.json", "test-e2-output.json"); }
@@ -50,10 +51,11 @@ void RunIntegrationTests() {
   RUN_TEST(tr, TestPartE1);
   RUN_TEST(tr, TestPartE2);
   RUN_TEST(tr, TestPartE3);
-  {
-    LOG_DURATION("F");
-    RUN_TEST(tr, TestPartF);
-  }
+  RUN_TEST(tr, TestPartX);
+  // {
+  //   LOG_DURATION("F");
+  //   RUN_TEST(tr, TestPartF);
+  // }
 }
 
 int main() {

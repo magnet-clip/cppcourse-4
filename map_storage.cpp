@@ -82,10 +82,17 @@ VertexId MapStorage::AddBusStop(BusId bus_id, StopId stop_id) {
 
   return vertex_id;
 }
-
 VertexId MapStorage::GetWaitStop(StopId stop_id) const {
   return _vertices_by_wait_stops.at(stop_id);
 }
+// optional<VertexId> MapStorage::GetWaitStop(StopId stop_id) const {
+//   auto it = _vertices_by_wait_stops.find(stop_id);
+//   if (it != _vertices_by_wait_stops.end()) {
+//     return it->first;
+//   } else {
+//     return nullopt;
+//   }
+// }
 
 size_t MapStorage::TotalStopCount() const { return _stops_by_vertices.size(); }
 
