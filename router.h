@@ -33,20 +33,15 @@ class Router {
 
  public:
   Router(const Graph &graph) : graph_(graph) {
-    _routes.assign(graph.GetVertexCount(), {graph.GetVertexCount(), {INF, std::nullopt}});
-    BuildAllRoutes();
   }
 
   using RouteId = uint64_t;
 
-  void BuildAllRoutes() const;
   std::optional<Route> BuildRoute(VertexId from, VertexId to) const;
   std::optional<double> FindDistance(VertexId from, VertexId to) const;
 
  private:
   const Graph &graph_;
-  // (from: VertexId)  -> (to: VertexId)  -> (prev: VertexId)
-  mutable std::vector<std::vector<RouteInfo>> _routes;
 };
 
 }  // namespace Graph

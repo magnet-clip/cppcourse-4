@@ -89,7 +89,8 @@ void TestRouterRoute() {
   const Router r(g);
   {
     auto route = r.BuildRoute(0, 0);
-    ASSERT(route == nullopt);
+    ASSERT_EQUAL(route->total_distance, 0);
+    ASSERT_EQUAL(route->path.size(), 0UL);
   }
   {
     auto route = r.BuildRoute(0, 1);
@@ -172,7 +173,8 @@ void TestRouterRoute2() {
 
   const Router r(g);
   auto route = r.BuildRoute(0, 0);
-  ASSERT(route == nullopt);
+  ASSERT_EQUAL(route->total_distance, 0);
+  ASSERT_EQUAL(route->path.size(), 0UL);
 
   route = r.BuildRoute(6, 0);
   ASSERT(route == nullopt);

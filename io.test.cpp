@@ -1,14 +1,14 @@
 #include "io.test.h"
 
-#include "io.h"
-#include "json.h"
-#include "test_runner.h"
-
 #include <cmath>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <unordered_map>
+
+#include "io.h"
+#include "json.h"
+#include "test_runner.h"
 
 using namespace std;
 
@@ -69,8 +69,9 @@ void TestJsonSample() {
   db.ExecuteCommands(commands);
   const auto responses = db.ExecuteQueries(queries);
   const auto strings = string_io.ProcessResponses(responses);
-  ASSERT_EQUAL(strings[0], "Bus 256: 6 stops on route, 5 unique stops, 5950 "
-                           "route length, 1.361239 curvature");
+  ASSERT_EQUAL(strings[0],
+               "Bus 256: 6 stops on route, 5 unique stops, 5950 "
+               "route length, 1.361239 curvature");
   const auto jsons = json_io.ProcessResponses(responses);
   ASSERT_EQUAL(jsons[0],
                "{\"curvature\":1.361239,\"request_id\":1965312327,\"route_"
@@ -96,7 +97,7 @@ void Compare(const unordered_map<RequestId, Json::Node> &actual,
     const auto &expected_node = expected.at(id);
 
     if (!(actual_node == expected_node)) {
-      cout << "Requese id " << id << endl;
+      cout << "Request id " << id << endl;
       cout << "Actual" << endl
            << actual_node << endl;
       cout << "Expected" << endl
@@ -114,31 +115,6 @@ void Compare(const unordered_map<RequestId, Json::Node> &actual,
         const auto actual_time = actual_map.at("total_time");
         const auto expected_time = expected_map.at("total_time");
         ASSERT_EQUAL(actual_time, expected_time);
-
-        const auto &actual_items = actual_map.at("items").AsArray();
-        const auto &expected_items = expected_map.at("items").AsArray();
-        ASSERT_EQUAL(actual_items.size(), expected_items.size());
-
-        for (size_t i = 0; i < actual_items.size(); i++) {
-          const auto &actual_record = actual_items[i].AsMap();
-          const auto &expected_record = expected_items[i].AsMap();
-
-          const auto &actual_type = actual_record.at("type").AsString();
-          const auto &expected_type = expected_record.at("type").AsString();
-          ASSERT_EQUAL(actual_type, expected_type);
-
-          if (actual_type == "Wait") {
-            ASSERT_EQUAL(actual_record, expected_record);
-          } else {
-            const auto actual_spans = actual_record.at("span_count");
-            const auto expected_spans = expected_record.at("span_count");
-            ASSERT_EQUAL(actual_spans, expected_spans);
-
-            const auto actual_item_time = actual_record.at("time");
-            const auto expected_item_time = expected_record.at("time");
-            ASSERT_EQUAL(actual_item_time, expected_item_time);
-          }
-        }
       }
     } else {
       ASSERT_EQUAL(actual_node, expected_node);

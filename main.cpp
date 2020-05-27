@@ -59,7 +59,7 @@ void RunIntegrationTests() {
 int main() {
   // RunUnitTests();
   RunIntegrationTests();
-  // JsonIo io;
-  // InAndOut(cin, cout, io);
+  JsonIo io;
+  InAndOut(cin, cout, io);
   return 0;
 }

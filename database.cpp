@@ -128,9 +128,9 @@ ResponsePtr Database::ExecuteRouteQuery(const RouteQuery &query) {
   // 3) Trace route by edges and make a response
   FoundRouteResponse response(query.GetId());
   response.total_time = route->total_distance;
-  if (route->path.size() < 1) {
-    throw domain_error("Path too short");
-  }
+  // if (route->path.size() < 1) {
+  //   throw domain_error("Path too short");
+  // }
   for (size_t idx = 1; idx < route->path.size(); idx++) {
     const auto prev_vertex_id = route->path.at(idx - 1);
     const auto curr_vertex_id = route->path.at(idx);
