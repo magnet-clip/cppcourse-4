@@ -17,14 +17,7 @@ namespace Graph {
 
 const double INF = std::numeric_limits<double>::max();
 
-enum class TripleState {
-  Unknown,
-  NoPath,
-  Exists
-};
-
 struct RouteInfo {
-  TripleState state;
   double distance;
   std::optional<VertexId> prev;
 };
@@ -40,16 +33,13 @@ class Router {
 
  public:
   Router(const Graph &graph) : graph_(graph) {
-    // _routes.reserve(graph.GetVertexCount());
-    // for (size_t idx = 0; idx < graph.GetVertexCount(); idx++) {
-    //   _routes.push_back({graph.GetVertexCount(), {TripleState::Unknown, INF, std::nullopt}});
-    // }
-
-    _routes.assign(graph.GetVertexCount(), {graph.GetVertexCount(), {TripleState::Unknown, INF, std::nullopt}});
+    _routes.assign(graph.GetVertexCount(), {graph.GetVertexCount(), {INF, std::nullopt}});
+    BuildAllRoutes();
   }
 
   using RouteId = uint64_t;
 
+  void BuildAllRoutes() const;
   std::optional<Route> BuildRoute(VertexId from, VertexId to) const;
   std::optional<double> FindDistance(VertexId from, VertexId to) const;
 

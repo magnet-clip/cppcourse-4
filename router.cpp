@@ -1,7 +1,6 @@
 #include <router.h>
 
-#include <iostream>
-#include <queue>
+// #include <iostream>
 #include <utility>
 
 using namespace std;
@@ -19,100 +18,50 @@ struct HalfEdgeComparer {
 };
 
 optional<double> Router::FindDistance(VertexId from, VertexId to) const {
-  priority_queue<HalfEdge, vector<HalfEdge>, HalfEdgeComparer> edge_queue;
+  if (!_routes[from][to].prev) {
+    return nullopt;
+  } else {
+    return {_routes[from][to].distance};
+  }
+}
 
-  vector<double> dist(graph_.GetVertexCount(), INF);
-  vector<optional<VertexId>> prev(graph_.GetVertexCount(), nullopt);
-
-  edge_queue.push({from, 0.0});
-  dist[from] = 0.0;
-
-  while (!edge_queue.empty()) {
-    VertexId u = edge_queue.top().vertex_id;
-    edge_queue.pop();
-
-    for (auto incident_edge_id : graph_.GetIncidentEdges(u)) {
-      Edge incident_edge = graph_.GetEdge(incident_edge_id);
-      VertexId v = incident_edge.to;
-      double weight = incident_edge.weight;
-      if (dist[v] > dist[u] + weight) {
-        dist[v] = dist[u] + weight;
-        edge_queue.push({v, dist[v]});
-        prev[v] = u;
+void Router::BuildAllRoutes() const {
+  const auto vertex_count = graph_.GetVertexCount();
+  for (VertexId from = 0; from < vertex_count; from++) {
+    auto changed = true;
+    while (changed) {
+      changed = false;
+      for (EdgeId edgeId = 0; edgeId < graph_.GetEdgeCount(); edgeId++) {
+        const auto edge = graph_.GetEdge(edgeId);
+        auto& route = _routes[from];
+        route[edge.from].distance = 0.0;
+        if (route[edge.from].distance < INF) {
+          const auto new_weight = route[edge.from].distance + edge.weight;
+          if (route[edge.to].distance > new_weight) {
+            route[edge.to].prev = {edge.to};
+            route[edge.to].distance = new_weight;
+            changed = true;
+          }
+        }
       }
     }
-  }
-
-  if (dist[to] < INF) {
-    return dist[to];
-  } else {
-    return nullopt;
   }
 }
 
 optional<Router::Route> Router::BuildRoute(VertexId from, VertexId to) const {
-  cout << "Looking for distance between " << from << " and " << to << endl;
-  if (_routes[from][to].state == TripleState::NoPath) {
-    cout << " - already tried, no route" << endl;
+  if (!_routes[from][to].prev) {
     return nullopt;
-  } else if (_routes[from][to].state == TripleState::Exists) {
-    cout << " - already tried, there's a route" << endl;
+  } else {
     vector<VertexId> path;
-
+    double total_distance = 0.0;
     auto current = to;
     do {
       path.push_back(current);
       current = *_routes[from][current].prev;
+      total_distance += _routes[from][current].distance;
     } while (current != from);
     path.push_back(from);
 
-    return {{_routes[from][to].distance, {path.rbegin(), path.rend()}}};
-  }
-
-  // state is Unknown
-  priority_queue<HalfEdge, vector<HalfEdge>, HalfEdgeComparer> edge_queue;
-
-  vector<double> dist(graph_.GetVertexCount(), INF);
-  vector<optional<VertexId>> prev(graph_.GetVertexCount(), nullopt);
-
-  edge_queue.push({from, 0.0});
-  dist[from] = 0.0;
-
-  while (!edge_queue.empty()) {
-    VertexId u = edge_queue.top().vertex_id;
-    edge_queue.pop();
-
-    for (auto incident_edge_id : graph_.GetIncidentEdges(u)) {
-      Edge incident_edge = graph_.GetEdge(incident_edge_id);
-      VertexId v = incident_edge.to;
-      double weight = incident_edge.weight;
-      if (dist[v] > dist[u] + weight) {
-        dist[v] = dist[u] + weight;
-        edge_queue.push({v, dist[v]});
-        prev[v] = u;
-      }
-    }
-  }
-
-  if (prev[to]) {
-    cout << " - found a route" << endl;
-    vector<VertexId> path;
-
-    auto current = to;
-    do {
-      _routes[from][current].state = TripleState::Exists;
-      _routes[from][current].distance = dist[current];
-      _routes[from][current].prev = prev[current];
-
-      path.push_back(current);
-      current = prev[current].value();
-    } while (current != from);
-    path.push_back(from);
-
-    return {{_routes[from][to].distance, {path.rbegin(), path.rend()}}};
-  } else {
-    cout << " - no route!" << endl;
-    _routes[from][to].state = TripleState::NoPath;
-    return nullopt;
+    return {{total_distance, {path.rbegin(), path.rend()}}};
   }
 }

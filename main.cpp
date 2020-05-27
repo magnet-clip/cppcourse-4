@@ -6,6 +6,7 @@
 #include "io.test.h"
 #include "json.test.h"
 #include "parser.test.h"
+#include "profile.h"
 #include "router.test.h"
 #include "test_runner.h"
 
@@ -49,12 +50,15 @@ void RunIntegrationTests() {
   RUN_TEST(tr, TestPartE1);
   RUN_TEST(tr, TestPartE2);
   RUN_TEST(tr, TestPartE3);
-  RUN_TEST(tr, TestPartF);
+  {
+    LOG_DURATION("F");
+    RUN_TEST(tr, TestPartF);
+  }
 }
 
 int main() {
-  // RunUnitTests();
-  RunIntegrationTests();
+  RunUnitTests();
+  // RunIntegrationTests();
   // JsonIo io;
   // InAndOut(cin, cout, io);
   return 0;
