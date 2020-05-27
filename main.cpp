@@ -52,14 +52,14 @@ void RunIntegrationTests() {
   RUN_TEST(tr, TestPartE2);
   RUN_TEST(tr, TestPartE3);
   RUN_TEST(tr, TestPartX);
-  // {
-  //   LOG_DURATION("F");
-  //   RUN_TEST(tr, TestPartF);
-  // }
+  {
+    LOG_DURATION("F");
+    RUN_TEST(tr, TestPartF);
+  }
 }
 
 int main() {
-  // RunUnitTests();
+  RunUnitTests();
   RunIntegrationTests();
   JsonIo io;
   InAndOut(cin, cout, io);
