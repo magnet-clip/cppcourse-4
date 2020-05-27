@@ -59,8 +59,8 @@ void RunIntegrationTests() {
 }
 
 int main() {
-  RunUnitTests();
-  RunIntegrationTests();
+  // RunUnitTests();
+  // RunIntegrationTests();
   JsonIo io;
   InAndOut(cin, cout, io);
   return 0;
